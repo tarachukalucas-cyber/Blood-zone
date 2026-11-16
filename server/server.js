@@ -40,7 +40,7 @@ function publicPlayer(p) {
 function makePlayer(socket, data, team) {
   const striker = STRIKERS[data.striker] ? data.striker : "Ethan";
   return { id:socket.id, name:String(data.name || "Player").slice(0,16), striker, team,
-    x:rand(-12,12), y:0, z:rand(-12,12), vx:0, vz:0, yaw:0, pitch:0,
+    x:rand(-12,12), y:0, vy:0, z:rand(-12,12), vx:0, vz:0, yaw:0, pitch:0,
     hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorMax:25, armorLevel:1, armorXp:0,
     alive:true, kills:0, money:800, weapon:"rifle", lastShot:0, lastAbility:0,
     input:{forward:0,right:0,sprint:false,crouch:false}, wildcards:[], shield:null, turret:null, dashUntil:0 };
@@ -67,8 +67,8 @@ function startMatch(room) {
 function resetRound(room) {
   room.round++;
   for (const p of room.players.values()) {
-    p.alive=true; p.hp=p.maxHp; p.armor=25; p.x=rand(-10,10); p.z=rand(-10,10);
-    p.shield=null; p.turret=null; p.weapon="rifle"; p.armorXp=0; p.armorLevel=1; p.armorMax=25;
+    p.alive=true; p.hp=p.maxHp; p.armor=p.armorMax; p.x=rand(-10,10); p.y=0; p.vy=0; p.z=rand(-10,10);
+    p.shield=null; p.turret=null; p.armorXp=0; p.armorLevel=1; p.armorMax=25;
   }
   room.phase = "buy"; room.roundEnds = Date.now()+12000;
   io.to(room.id).emit("notice", "Nova rodada! Loja aberta.");
@@ -147,7 +147,7 @@ function update(room,dt) {
     let dx=(fx*p.input.forward+rx*p.input.right)*speed*dt;
     let dz=(fz*p.input.forward+rz*p.input.right)*speed*dt;
     const wc=p.wildcards.find(w=>w.effect==="speed"); if(wc){dx*=wc.value;dz*=wc.value;}
-    p.x=clamp(p.x+dx,-ARENA,ARENA); p.z=clamp(p.z+dz,-ARENA,ARENA);
+    p.x=clamp(p.x+dx,-ARENA,ARENA); p.z=clamp(p.z+dz,-ARENA,ARENA);\n    p.vy-=18*dt; p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0)p.vy=0;
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
       if(p.turret.hp<=0){p.turret=null;continue;}
@@ -180,7 +180,7 @@ io.on("connection",socket=>{
     p.input={forward:clamp(Number(data.forward)||0,-1,1),right:clamp(Number(data.right)||0,-1,1),sprint:!!data.sprint,crouch:!!data.crouch};
     p.yaw=Number.isFinite(data.yaw)?data.yaw:p.yaw;p.pitch=clamp(Number(data.pitch)||0,-1.35,1.35);
   });
-  socket.on("ability",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(r&&p?.alive&&r.phase==="playing")useAbility(r,p);});
+  socket.on("jump",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(p?.alive&&p.y<=0.02)p.vy=7.5;});\n  socket.on("ability",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(r&&p?.alive&&r.phase==="playing")useAbility(r,p);});
   socket.on("fire",data=>{
     const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive||r.phase!=="playing")return;
     const w=WEAPONS[p.weapon]||WEAPONS.rifle,now=Date.now();if(now-p.lastShot<w.cooldown)return;p.lastShot=now;
@@ -203,7 +203,7 @@ io.on("connection",socket=>{
   });
   socket.on("pickup",id=>{
     const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive)return;
-    const item=r.pickups.find(v=>v.id===id);const pickupRange=p.wildcards.some(w=>w.effect==="loot")?4.5:3;if(!item||dist2(p,item)>pickupRange)return;
+    const item=(r.pickups||[]).find(v=>v.id===id);const pickupRange=p.wildcards.some(w=>w.effect==="loot")?4.5:3;if(!item||dist2(p,item)>pickupRange)return;
     if(p.wildcards.length>=3){socket.emit("notice","Você já equipa 3 Wildcards.");return;}
     const card=item.card||WILDCARDS[Math.floor(Math.random()*WILDCARDS.length)];
     p.wildcards.push(card);r.pickups=r.pickups.filter(v=>v.id!==id);emitState(r);
