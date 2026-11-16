@@ -32,12 +32,12 @@ function init3D(){
  renderer.domElement.addEventListener("click",()=>{if(innerWidth>700)renderer.domElement.requestPointerLock();});
  document.addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0022,-1.3,1.3);}});
  renderer.domElement.addEventListener("mousedown",e=>{if(e.button===0)network.fire();});\n let touchLook=null;\n renderer.domElement.addEventListener("touchstart",e=>{const t=e.changedTouches[0];if(t.clientX>innerWidth*.38)touchLook={x:t.clientX,y:t.clientY,id:t.identifier};},{passive:true});\n renderer.domElement.addEventListener("touchmove",e=>{if(!touchLook)return;const t=[...e.changedTouches].find(v=>v.identifier===touchLook.id);if(!t)return;yaw-=(t.clientX-touchLook.x)*.006;pitch=THREE.MathUtils.clamp(pitch-(t.clientY-touchLook.y)*.006,-1.3,1.3);touchLook.x=t.clientX;touchLook.y=t.clientY;},{passive:true});\n renderer.domElement.addEventListener("touchend",()=>touchLook=null);
- document.addEventListener("keydown",e=>{keys[e.code]=true;if(e.code==="KeyQ")network.ability();if(e.code==="KeyE")tryPickup();if(e.code==="Space"&&grounded){velocityY=7;grounded=false;}});
+ document.addEventListener("keydown",e=>{keys[e.code]=true;if(e.code==="KeyQ")network.ability();if(e.code==="KeyE")tryPickup();if(e.code==="Space"&&grounded){velocityY=7;grounded=false;network.jump();}});
  document.addEventListener("keyup",e=>keys[e.code]=false);
  $("abilityBtn").onclick=()=>network.ability();
  document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>network.buy(b.dataset.buy));
  $("fireTouch").ontouchstart=e=>{e.preventDefault();network.fire();};
- $("jumpTouch").ontouchstart=e=>{e.preventDefault();if(grounded){velocityY=7;grounded=false;}};
+ $("jumpTouch").ontouchstart=e=>{e.preventDefault();if(grounded){velocityY=7;grounded=false;network.jump();}};
  setupStick();animate();
 }
 function setupStick(){
@@ -74,10 +74,10 @@ function renderState(state){
    $("kills").textContent="ABATES "+p.kills;$("money").textContent="$"+p.money;$("weapon").textContent=(p.weapon||"rifle").toUpperCase();
    $("wildcards").textContent="WILDCARDS: "+p.wildcards.length+"/3";
   }
-  if(p.shield&&!meshes.has("shield"+p.id)){const s=new THREE.Mesh(new THREE.BoxGeometry(4,3,.2),new THREE.MeshStandardMaterial({color:0x36bfff,transparent:true,opacity:.35,emissive:0x124d77}));s.position.set(p.shield.x,1.5,p.shield.z);s.rotation.y=p.shield.yaw;scene.add(s);meshes.set("shield"+p.id,s);}
+  if(p.shield){let s=meshes.get("shield"+p.id);if(!s){s=new THREE.Mesh(new THREE.BoxGeometry(4,3,.2),new THREE.MeshStandardMaterial({color:0x36bfff,transparent:true,opacity:.35,emissive:0x124d77}));scene.add(s);meshes.set("shield"+p.id,s);}s.position.set(p.shield.x,1.5,p.shield.z);s.rotation.y=p.shield.yaw;}else if(meshes.has("shield"+p.id)){scene.remove(meshes.get("shield"+p.id));meshes.delete("shield"+p.id);}
  }
  for(const [id,m] of meshes){if(!present.has(id)&&!id.startsWith("shield")){scene.remove(m);meshes.delete(id);}}
- for(const item of state.world?.wildcards||[]){const id="pickup"+item.id;if(!meshes.has(id)){const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color:0xeac54b,emissive:0x61450c}));gem.position.set(item.x,.7,item.z);scene.add(gem);meshes.set(id,gem);}}
+ const activePickups=new Set();for(const item of state.world?.wildcards||[]){const id="pickup"+item.id;activePickups.add(id);if(!meshes.has(id)){const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color:0xeac54b,emissive:0x61450c}));gem.position.set(item.x,.7,item.z);scene.add(gem);meshes.set(id,gem);}}\n for(const [id,obj] of meshes){if(id.startsWith("pickup")&&!activePickups.has(id)){scene.remove(obj);meshes.delete(id);}}
 }
 function tryPickup(){
  if(!me||!network.state)return;const p=network.state.players.find(v=>v.id===me);if(!p)return;
