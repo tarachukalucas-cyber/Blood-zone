@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "node --watch server/server.js",
-    "check": "node --check server/server.js && node --check server/game/rules.js && node --check client/js/main.js && node --check client/js/network.js && node --check client/js/game/scene.js"
+    "check": "node --check server/server.js && node --check server/game/rules.js && node --input-type=module --check < client/js/main.js && node --input-type=module --check < client/js/network.js && node --input-type=module --check < client/js/game/scene.js"
   },
   "engines": {
     "node": ">=20"
