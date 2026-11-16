@@ -194,7 +194,7 @@ function update(room,dt) {
     // Axis-separated AABB checks keep players from walking through arena cover.
     if(!blocked(nextX,p.z))p.x=nextX;
     if(!blocked(p.x,nextZ))p.z=nextZ;
-    if(p.y>0){p.vy-=(p.parachuting?4.5:18)*dt; if(p.parachuting)p.vy=Math.max(p.vy,-6); p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0){p.vy=0;p.parachuting=false;}}
+    if(p.y>0||p.vy>0){p.vy-=(p.parachuting?4.5:18)*dt; if(p.parachuting)p.vy=Math.max(p.vy,-6); p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0){p.vy=0;p.parachuting=false;}}
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
       if(p.turret.hp<=0){p.turret=null;continue;}
