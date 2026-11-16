@@ -72,7 +72,7 @@ function renderState(state){
  $("scores").textContent=state.mode==="sf"?"VERMELHO "+state.scores.red+" — AZUL "+state.scores.blue:"ZONA "+Math.round(state.zone.radius)+"m";
  const present=new Set();
  for(const p of state.players){present.add(p.id);let m=meshes.get(p.id);if(!m){m=makePlayerMesh(p);meshes.set(p.id,m);}
-  m.position.set(p.x,p.y||0,p.z);m.rotation.y=p.yaw;
+  m.position.set(p.x,p.y||0,p.z);m.rotation.y=p.yaw;m.visible=p.alive;
   if(p.id===me){$("hp").textContent=Math.max(0,Math.round(p.hp));$("hpBar").style.width=Math.max(0,p.hp/p.maxHp*100)+"%";
    $("armor").textContent=Math.round(p.armor);$("armorBar").style.width=Math.max(0,p.armor/(p.armorMax||25)*100)+"%";
    $("armorLevel").textContent=["I","II","III"][Math.min(2,p.armorLevel-1)]||"III";
@@ -80,6 +80,7 @@ function renderState(state){
    $("wildcards").textContent="WILDCARDS: "+p.wildcards.length+"/3";
   }
   if(p.shield){let s=meshes.get("shield"+p.id);if(!s){s=new THREE.Mesh(new THREE.BoxGeometry(4,3,.2),new THREE.MeshStandardMaterial({color:0x36bfff,transparent:true,opacity:.35,emissive:0x124d77}));scene.add(s);meshes.set("shield"+p.id,s);}s.position.set(p.shield.x,1.5,p.shield.z);s.rotation.y=p.shield.yaw;}else if(meshes.has("shield"+p.id)){scene.remove(meshes.get("shield"+p.id));meshes.delete("shield"+p.id);}
+  if(p.turret){let t=meshes.get("turret"+p.id);if(!t){t=new THREE.Group();const base=new THREE.Mesh(new THREE.CylinderGeometry(.48,.55,.35,8),new THREE.MeshStandardMaterial({color:0x333b49,metalness:.4}));base.position.y=.2;t.add(base);const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.75,8),new THREE.MeshStandardMaterial({color:0xc5a34b,metalness:.6}));barrel.position.y=.7;t.add(barrel);scene.add(t);meshes.set("turret"+p.id,t);}t.position.set(p.turret.x,0,p.turret.z);}else if(meshes.has("turret"+p.id)){scene.remove(meshes.get("turret"+p.id));meshes.delete("turret"+p.id);}
  }
  for(const [id,m] of meshes){if(!present.has(id)&&!id.startsWith("shield")){scene.remove(m);meshes.delete(id);}}
  const activePickups=new Set();for(const item of state.world?.wildcards||[]){const id="pickup"+item.id;activePickups.add(id);if(!meshes.has(id)){const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color:0xeac54b,emissive:0x61450c}));gem.position.set(item.x,.7,item.z);scene.add(gem);meshes.set(id,gem);}}
