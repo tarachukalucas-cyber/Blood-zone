@@ -63,6 +63,21 @@ function addStreetLamp(scene,x,z) {
   const bulb=new THREE.Mesh(new THREE.BoxGeometry(.45,.16,.35),new THREE.MeshStandardMaterial({color:0xe5d5a1,emissive:0x66502a}));
   bulb.position.set(1.12,5.68,0);g.add(bulb);scene.add(g);
 }
+function addDistrictLabel(scene,label,x,z) {
+  const canvas=document.createElement("canvas");canvas.width=512;canvas.height=112;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="rgba(8,14,20,.76)";ctx.fillRect(0,0,512,112);
+  ctx.strokeStyle="#e14a5c";ctx.lineWidth=6;ctx.strokeRect(4,4,504,104);
+  ctx.fillStyle="#f4f6f5";ctx.font="bold 42px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(label.toUpperCase(),256,58);
+  const texture=new THREE.CanvasTexture(canvas);
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
+  sprite.position.set(x,24,z);sprite.scale.set(33,7.2,1);scene.add(sprite);
+}
+function addMountain(scene,x,z,scale,shade) {
+  const mountain=new THREE.Mesh(new THREE.ConeGeometry(18*scale,30*scale,6),new THREE.MeshStandardMaterial({color:shade,roughness:1}));
+  mountain.position.set(x,14*scale-1,z);mountain.castShadow=true;mountain.receiveShadow=true;scene.add(mountain);
+}
 function makePlane() {
   const plane=new THREE.Group();
   const fuselage=new THREE.Mesh(new THREE.CylinderGeometry(.78,1.05,19,12),new THREE.MeshStandardMaterial({color:0x56636d,metalness:.55,roughness:.5}));
@@ -143,6 +158,13 @@ export function buildArena(scene) {
     {x:5,z:135,w:22,d:15,h:9},{x:-10,z:-15,w:12,d:10,h:5}
   ];
   obstacles.forEach((o,i)=>addBuilding(scene,o,i));
+  addDistrictLabel(scene,"Industrial Yard",-88,-32);
+  addDistrictLabel(scene,"Downtown",74,-72);
+  addDistrictLabel(scene,"Old Village",-82,68);
+  addDistrictLabel(scene,"Port Sector",48,-183);
+  addDistrictLabel(scene,"Radar Ridge",141,70);
+  // Low-poly mountain silhouettes frame the playable island.
+  for(const [x,z,scale] of [[-225,-195,1.4],[-160,-228,1.0],[-35,-230,1.3],[95,-228,1.1],[218,-188,1.5],[-225,30,1.1],[-222,190,1.4],[-115,225,1.1],[20,230,1.4],[150,220,1.1],[225,140,1.3],[230,-35,1.1]])addMountain(scene,x,z,scale,0x59645b);
   // Industrial tanks, port cranes, radar dish and water towers make each district recognizable.
   for(const x of [-122,-92,-62]){
     cylinder(scene,5.8,5.8,9,mats.metal,x,4.5,-137,12);
