@@ -258,50 +258,38 @@ function makeHand(parent,material,x,y,z) {
   return hand;
 }
 function makeWeaponModel(type="rifle") {
+  // Fictional energy projector: abstract geometry only, with no real-world mechanism.
   const model=new THREE.Group();
-  const bodyMat=new THREE.MeshStandardMaterial({color:type==="marksman"?0x4d5962:0x303940,metalness:.58,roughness:.4});
-  const railMat=new THREE.MeshStandardMaterial({color:0x20282e,metalness:.45,roughness:.5});
-  const brassMat=new THREE.MeshStandardMaterial({color:0x9d8050,metalness:.55,roughness:.4});
-  if(type==="marksman") {
-    box(model,.22,.2,1.02,bodyMat,0,0,0);
-    box(model,.23,.13,.42,railMat,0,-.01,.52);
-    const barrel=cylinder(model,.045,.065,1.02,mats.metal,0,.02,-.95,10);barrel.rotation.x=Math.PI/2;
-    box(model,.14,.34,.2,railMat,0,-.23,-.02);
-    box(model,.14,.16,.24,railMat,0,-.18,.23);
-    const scope=cylinder(model,.105,.105,.42,railMat,0,.24,-.05,12);scope.rotation.x=Math.PI/2;
-    cylinder(model,.16,.16,.18,brassMat,0,.24,-.05,12).rotation.x=Math.PI/2;
-    box(model,.04,.11,.12,railMat,0,.14,-.7);
-  } else if(type==="shotgun") {
-    box(model,.26,.2,.63,bodyMat,0,0,.04);
-    for(const x of [-.075,.075]) {
-      const barrel=cylinder(model,.055,.06,.82,mats.metal,x,.035,-.63,10);barrel.rotation.x=Math.PI/2;
-    }
-    box(model,.24,.12,.34,railMat,0,-.03,.47);
-    cylinder(model,.055,.055,.5,railMat,0,-.16,-.14,10).rotation.x=Math.PI/2;
-    box(model,.15,.29,.2,railMat,0,-.22,.03);
-    box(model,.15,.15,.2,railMat,0,-.16,.27);
-    box(model,.18,.07,.25,brassMat,0,.15,-.08);
-  } else if(type==="smg") {
-    box(model,.2,.17,.55,bodyMat,0,0,0);
-    box(model,.21,.12,.28,railMat,0,-.01,.4);
-    const barrel=cylinder(model,.04,.05,.48,mats.metal,0,.02,-.5,10);barrel.rotation.x=Math.PI/2;
-    box(model,.12,.24,.16,railMat,0,-.19,-.02);
-    box(model,.14,.17,.16,railMat,0,-.16,.16);
-    box(model,.16,.05,.15,brassMat,0,.13,-.05);
-    box(model,.18,.09,.23,railMat,0,.02,.57);
-  } else {
-    box(model,.2,.18,.75,bodyMat,0,0,0);
-    box(model,.24,.12,.42,railMat,0,-.02,.33);
-    const barrel=cylinder(model,.045,.06,.66,mats.metal,0,.025,-.62,10);barrel.rotation.x=Math.PI/2;
-    box(model,.12,.28,.2,railMat,0,-.2,-.1);
-    box(model,.13,.2,.17,railMat,0,-.16,.1);
-    box(model,.18,.07,.22,mats.metal,0,.13,-.1);
-    const optic=cylinder(model,.075,.075,.2,railMat,0,.25,-.06,10);optic.rotation.x=Math.PI/2;
-    box(model,.035,.12,.18,railMat,0,.16,-.62);
+  const chassis=new THREE.MeshStandardMaterial({color:0x263a45,metalness:.48,roughness:.38});
+  const trim=new THREE.MeshStandardMaterial({color:0x617984,metalness:.62,roughness:.3});
+  const glow=new THREE.MeshStandardMaterial({color:0x38d8ed,emissive:0x087c9d,emissiveIntensity:1.8,metalness:.25,roughness:.22});
+  const warm=new THREE.MeshStandardMaterial({color:0xff9d54,emissive:0x8b3212,emissiveIntensity:1.3});
+  const length=type==="marksman"?1.18:type==="shotgun"?.82:type==="smg"?.58:.9;
+  box(model,.28,.25,length,chassis,0,0,0);
+  box(model,.34,.07,length*.68,trim,0,.16,-.01);
+  box(model,.08,.31,length*.48,chassis,-.2,0,-.02);
+  box(model,.08,.31,length*.48,chassis,.2,0,-.02);
+  const core=new THREE.Mesh(new THREE.OctahedronGeometry(type==="marksman"?.17:.14,1),glow);
+  core.position.set(0,.06,-.08);model.add(core);
+  const ringCount=type==="marksman"?3:1;
+  for(let i=0;i<ringCount;i++){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(type==="marksman"?.16:.13,.035,7,14),trim);
+    ring.position.set(0,.02,-length*.31-i*.17);model.add(ring);
   }
-  const flash=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshBasicMaterial({color:0xffc56a}));
-  flash.position.set(0,.025,type==="marksman"?-1.55:type==="shotgun"?-1.08:type==="smg"?-.77:-.99);
-  flash.visible=false;model.add(flash);
+  const emitters=type==="shotgun"?[-.13,0,.13]:type==="smg"?[-.1,.1]:[0];
+  for(const x of emitters){
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(type==="marksman"?.1:.085,10,8),glow);
+    orb.position.set(x,.025,-length*.52);model.add(orb);
+    const collar=new THREE.Mesh(new THREE.TorusGeometry(.105,.025,6,12),warm);
+    collar.position.set(x,.025,-length*.49);model.add(collar);
+  }
+  // Small side fins and an illuminated status strip make the silhouette distinct.
+  for(const side of [-1,1]){
+    const fin=box(model,.055,.2,.3,side===1?warm:trim,side*.19,.02,length*.12);
+    fin.rotation.y=side*.15;
+  }
+  const flash=new THREE.Mesh(new THREE.SphereGeometry(.18,8,6),new THREE.MeshBasicMaterial({color:0xb9faff}));
+  flash.position.set(0,.025,-length*.62);flash.visible=false;model.add(flash);
   model.userData.flash=flash;return model;
 }
 export function setFirstPersonWeapon(rig,type) {
