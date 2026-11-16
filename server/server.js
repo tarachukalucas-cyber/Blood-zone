@@ -11,20 +11,10 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: process.env.CORS_ORIGIN || "*" } });
 const PORT = process.env.PORT || 3000;
 const TICK = 50;
-const ARENA = 90;
+const { ARENA, STRIKERS, WILDCARDS } = require("./game/rules");
 const rooms = new Map();
-const STRIKERS = {
-  Ethan: { hp: 100, speed: 7, active: "Protection Matrix", passive: "Reinforced plating" },
-  Zero:  { hp: 100, speed: 8.5, active: "Shadowstrike", passive: "Quick recovery" },
-  Hank:  { hp: 110, speed: 6.5, active: "Defensive Turret", passive: "Field engineer" }
-};
-const WILDCARDS = [
-  { id: "scavenger", name: "Scavenger", rarity: "common", effect: "loot", value: 1 },
-  { id: "runner", name: "Runner", rarity: "rare", effect: "speed", value: 1.12 },
-  { id: "medic", name: "Field Medic", rarity: "rare", effect: "heal", value: 1.1 },
-  { id: "fortified", name: "Fortified", rarity: "epic", effect: "armor", value: 1.15 },
-  { id: "marksman", name: "Marksman", rarity: "legendary", effect: "damage", value: 1.12 }
-];
+/* Weapon tuning stays server-side so clients cannot change damage or cooldowns. */
+const UNUSED_RULES_NOTE = "All authoritative combat values are held on the server.";
 const WEAPONS = {
   rifle: { name: "Rifle", price: 0, damage: 22, range: 75, cooldown: 180 },
   smg: { name: "SMG", price: 1800, damage: 14, range: 42, cooldown: 90 },
@@ -51,7 +41,7 @@ function makePlayer(socket, data, team) {
   const striker = STRIKERS[data.striker] ? data.striker : "Ethan";
   return { id:socket.id, name:String(data.name || "Player").slice(0,16), striker, team,
     x:rand(-12,12), y:0, z:rand(-12,12), vx:0, vz:0, yaw:0, pitch:0,
-    hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorLevel:1,
+    hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorLevel:1, armorXp:0,
     alive:true, kills:0, money:800, weapon:"rifle", lastShot:0, lastAbility:0,
     input:{forward:0,right:0,sprint:false,crouch:false}, wildcards:[], shield:null, turret:null, dashUntil:0 };
 }
@@ -78,7 +68,7 @@ function resetRound(room) {
   room.round++;
   for (const p of room.players.values()) {
     p.alive=true; p.hp=p.maxHp; p.armor=25; p.x=rand(-10,10); p.z=rand(-10,10);
-    p.shield=null; p.turret=null; p.weapon="rifle";
+    p.shield=null; p.turret=null; p.weapon="rifle"; p.armorXp=0; p.armorLevel=1;
   }
   room.phase = "buy"; room.roundEnds = Date.now()+12000;
   io.to(room.id).emit("notice", "Nova rodada! Loja aberta.");
@@ -109,8 +99,14 @@ function checkWin(room) {
       if (room.scores[winner]>=3) {
         room.phase="finished"; io.to(room.id).emit("matchEnd",{winner:winner==="red"?"Equipe Vermelha":"Equipe Azul",reason:"3 rodadas vencidas"});
       } else if (room.scores.red===2 && room.scores.blue===2) {
-        room.phase="laststand"; io.to(room.id).emit("notice","LAST STAND DUEL: o próximo confronto decide a partida!");
-        resetRound(room); room.phase="laststand";
+        io.to(room.id).emit("notice","LAST STAND DUEL: um representante de cada equipe decide a partida!");
+        resetRound(room);
+        // A primeira pessoa de cada equipe é o representante do duelo final.
+        for (const p of room.players.values()) {
+          const teammates=[...room.players.values()].filter(q=>q.team===p.team);
+          if (teammates.indexOf(p)>0) p.alive=false;
+        }
+        room.phase="playing";
       } else setTimeout(()=>{ if(rooms.has(room.id) && room.phase!=="finished") resetRound(room); },3500);
     }
   }
@@ -119,15 +115,16 @@ function applyDamage(room, target, amount, attacker, part="body") {
   // Fictional hit zones: head 1.8x, torso 1x, limbs 0.75x.
   const mult=part==="head"?1.8:part==="limb"?0.75:1;
   let damage=amount*mult;
-  const absorbed=Math.min(target.armor,damage*0.65);
+  const absorbRate=target.striker==="Ethan"?0.72:0.65; // Ethan passive: reinforced plating.
+  const absorbed=Math.min(target.armor,damage*absorbRate);
   target.armor-=absorbed; damage-=absorbed;
+  target.armorXp+=absorbed;
+  target.armorLevel=Math.min(4,1+Math.floor(target.armorXp/35));
   target.hp-=damage;
-  const nextLevel=target.armor<5?1:target.armor<15?2:target.armor<30?3:target.armorLevel;
-  target.armorLevel=Math.max(target.armorLevel,nextLevel);
   if(target.hp<=0) eliminate(room,target,attacker);
 }
 function useAbility(room,p) {
-  const now=Date.now(); if(now-p.lastAbility<18000) return;
+  const now=Date.now(); const cooldown=p.striker==="Zero"?14000:p.striker==="Hank"?16000:18000; if(now-p.lastAbility<cooldown) return;
   p.lastAbility=now;
   if(p.striker==="Ethan") {
     p.shield={x:p.x+Math.sin(p.yaw)*2,z:p.z-Math.cos(p.yaw)*2,yaw:p.yaw,hp:400,expires:now+30000};
@@ -145,7 +142,7 @@ function update(room,dt) {
   const now=Date.now();
   for(const p of room.players.values()) {
     if(!p.alive) continue;
-    const cfg=STRIKERS[p.striker], speed=cfg.speed*(p.input.sprint?1.35:1)*(p.input.crouch?0.55:1);
+    const cfg=STRIKERS[p.striker], speed=cfg.speed*(p.input.sprint?1.35:1)*(p.input.crouch?0.55:1); // Zero passive: higher base mobility.
     const fx=-Math.sin(p.yaw), fz=-Math.cos(p.yaw), rx=Math.cos(p.yaw), rz=-Math.sin(p.yaw);
     let dx=(fx*p.input.forward+rx*p.input.right)*speed*dt;
     let dz=(fz*p.input.forward+rz*p.input.right)*speed*dt;
@@ -154,7 +151,7 @@ function update(room,dt) {
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
       if(p.turret.hp<=0){p.turret=null;continue;}
-      const enemy=[...room.players.values()].filter(q=>q.alive&&q.team!==p.team&&dist2(p.turret,q)<=20).sort((a,b)=>dist2(p.turret,a)-dist2(p.turret,b))[0];
+      const enemy=[...room.players.values()].filter(q=>q.alive&&q.team!==p.team&&dist2(p.turret,q)<=22).sort((a,b)=>dist2(p.turret,a)-dist2(p.turret,b))[0];
       if(enemy && now-p.turret.nextShot>=1000){p.turret.nextShot=now;applyDamage(room,enemy,15,p,"body");}
     }
   }
@@ -196,7 +193,10 @@ io.on("connection",socket=>{
       const miss=Math.hypot(vx-dir.x*t,vz-dir.z*t);
       if(miss<0.95){best=q;bestT=t;}
     }
-    if(best){const part=Math.random()<0.12?"head":Math.random()<0.25?"limb":"body";
+    if(best){
+      // Vertical ray position selects a coarse head / torso / leg hit zone.
+      const heightAtTarget=1.55-Math.tan(p.pitch)*bestT;
+      const part=heightAtTarget>1.48&&heightAtTarget<2.05?"head":heightAtTarget<0.48?"limb":"body";
       const bonus=p.wildcards.find(wc=>wc.effect==="damage")?.value||1;applyDamage(r,best,w.damage*bonus,p,part);
       socket.emit("hitConfirm",{target:best.id,part,damage:Math.round(w.damage*bonus*(part==="head"?1.8:part==="limb"?0.75:1))});
     }
