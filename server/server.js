@@ -11,7 +11,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: process.env.CORS_ORIGIN || "*" } });
 const PORT = process.env.PORT || 3000;
 const TICK = 50;
-const { ARENA, STRIKERS, WILDCARDS } = require("./game/rules");
+const { ARENA, STRIKERS, WILDCARDS, OBSTACLES } = require("./game/rules");
 const rooms = new Map();
 /* Weapon tuning stays server-side so clients cannot change damage or cooldowns. */
 const UNUSED_RULES_NOTE = "All authoritative combat values are held on the server.";
@@ -27,6 +27,9 @@ app.get("/health", (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 const rand = (a, b) => Math.random() * (b - a) + a;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+function blocked(x,z) {
+  return OBSTACLES.some(o=>Math.abs(x-o.x)<o.w/2+0.45 && Math.abs(z-o.z)<o.d/2+0.45);
+}
 function roomFor(socket) {
   for (const room of rooms.values()) if (room.players.has(socket.id)) return room;
   return null;
@@ -172,7 +175,10 @@ function update(room,dt) {
     let dx=(fx*p.input.forward+rx*p.input.right)*speed*dt;
     let dz=(fz*p.input.forward+rz*p.input.right)*speed*dt;
     const wc=p.wildcards.find(w=>w.effect==="speed"); if(wc){dx*=wc.value;dz*=wc.value;}
-    p.x=clamp(p.x+dx,-ARENA,ARENA); p.z=clamp(p.z+dz,-ARENA,ARENA);
+    const nextX=clamp(p.x+dx,-ARENA,ARENA), nextZ=clamp(p.z+dz,-ARENA,ARENA);
+    // Axis-separated AABB checks keep players from walking through arena cover.
+    if(!blocked(nextX,p.z))p.x=nextX;
+    if(!blocked(p.x,nextZ))p.z=nextZ;
     p.vy-=18*dt; p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0)p.vy=0;
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
