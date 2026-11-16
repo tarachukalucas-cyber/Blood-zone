@@ -50,7 +50,7 @@ function makePlayer(socket, data, team) {
 }
 function createRoom(id, mode) {
   const room = { id, mode, players:new Map(), phase:"waiting", round:1, scores:{red:0,blue:0},
-    zone:{x:0,z:0,radius:ARENA,stage:0}, flag:{x:0,z:0,owner:null,progress:0}, lastTick:Date.now(), roundEnds:0 };
+    zone:{x:0,z:0,radius:ARENA,stage:0}, flag:{x:0,z:0,active:false,owner:null,progress:0}, lastTick:Date.now(), roundEnds:0 };
   rooms.set(id, room); return room;
 }
 function emitState(room) {
@@ -191,6 +191,7 @@ function update(room,dt) {
     room.zone.radius=Math.max(8,room.zone.radius-0.015);
     for(const p of room.players.values()) if(p.alive&&dist2(p,room.zone)>room.zone.radius) applyDamage(room,p,5,null);
     if(now>room.zoneAt+120000 && room.flag.progress<100) {
+      room.flag.active=true;
       const carrier=[...room.players.values()].find(p=>p.alive&&dist2(p,room.flag)<5);
       if(carrier){room.flag.owner=carrier.id;room.flag.progress+=dt*10;if(room.flag.progress>=100){room.phase="finished";io.to(room.id).emit("matchEnd",{winner:carrier.name,reason:"Sudden Death Flag capturada"});}}
     }
