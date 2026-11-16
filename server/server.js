@@ -78,7 +78,7 @@ function resetRound(room) {
 }
 function eliminate(room, victim, killer) {
   if (!victim.alive) return;
-  victim.alive=false; victim.hp=0;
+  victim.alive=false; victim.hp=0; victim.turret=null; victim.shield=null;
   if (killer && killer.id !== victim.id) {
     killer.kills++; if (room.mode==="sf") killer.money += 600;
   }
@@ -127,8 +127,8 @@ function applyDamage(room, target, amount, attacker, part="body") {
   let damage=amount*mult;
   // Ethan's forward-facing matrix blocks damage until its 400 HP is depleted.
   if(attacker && target.shield) {
-    const frontDot=(attacker.x-target.shield.x)*Math.sin(target.yaw)
-      +(attacker.z-target.shield.z)*(-Math.cos(target.yaw));
+    const frontDot=(attacker.x-target.shield.x)*Math.sin(target.shield.yaw)
+      +(attacker.z-target.shield.z)*(-Math.cos(target.shield.yaw));
     if(frontDot>0) {
       target.shield.hp-=amount;
       if(target.shield.hp>0) return;
