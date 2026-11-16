@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { Network } from "./network.js";
+import { buildArena, createPlayerMesh } from "./game/scene.js";
 
 const $=id=>document.getElementById(id);
 const network=new Network();
@@ -26,15 +27,7 @@ function init3D(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x8799a5);scene.fog=new THREE.Fog(0x8799a5,65,145);
  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,250);
  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$("scene").appendChild(renderer.domElement);
- clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xc7e5ff,0x38402f,2));
- const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(25,45,20);sun.castShadow=true;scene.add(sun);
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x566a57,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
- const grid=new THREE.GridHelper(180,36,0x435b51,0x65776b);grid.position.y=.02;scene.add(grid);
- // Simple cover layout: crates, low walls and platforms.
- for(let i=0;i<34;i++){const w=2+Math.random()*4,h=1+Math.random()*3,d=2+Math.random()*4;
-  const box=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:i%3===0?0x6d5360:0x777f7e}));
-  box.position.set((Math.random()-.5)*100,h/2,(Math.random()-.5)*100);box.castShadow=true;box.receiveShadow=true;scene.add(box);}
- const flag=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,4),new THREE.MeshStandardMaterial({color:0xe33c57}));flag.position.set(0,2,0);scene.add(flag);
+ clock=new THREE.Clock();buildArena(scene);
  window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
  renderer.domElement.addEventListener("click",()=>{if(innerWidth>700)renderer.domElement.requestPointerLock();});
  document.addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0022,-1.3,1.3);}});
@@ -66,14 +59,7 @@ function animate(){
  }
  renderer.render(scene,camera);
 }
-function makePlayerMesh(p){
- const group=new THREE.Group(),color=p.team==="blue"?0x42a9ff:p.team==="red"?0xf04459:0xd4d8df;
- const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.85,4,8),new THREE.MeshStandardMaterial({color,roughness:.7}));
- body.position.y=.9;body.castShadow=true;group.add(body);
- const visor=new THREE.Mesh(new THREE.BoxGeometry(.48,.16,.12),new THREE.MeshStandardMaterial({color:0x142331,metalness:.5,roughness:.2}));
- visor.position.set(0,1.35,-.34);group.add(visor);
- scene.add(group);return group;
-}
+function makePlayerMesh(p){ return createPlayerMesh(scene,p.team); }
 function renderState(state){
  $("modeLabel").textContent=state.mode==="br"?"BATTLE ROYALE":"SQUAD FIGHT";
  $("phaseLabel").textContent=state.phase.toUpperCase();
