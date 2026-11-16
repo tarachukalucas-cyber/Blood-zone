@@ -50,7 +50,7 @@ function makePlayer(socket, data, team) {
 }
 function createRoom(id, mode) {
   const room = { id, mode, players:new Map(), phase:"waiting", round:1, scores:{red:0,blue:0},
-    zone:{x:0,z:0,radius:ARENA,stage:0}, flag:{x:0,z:0,active:false,owner:null,progress:0}, lastTick:Date.now(), roundEnds:0 };
+    zone:{x:0,z:0,radius:ARENA-20,stage:0}, flag:{x:0,z:0,active:false,owner:null,progress:0}, plane:null, lastTick:Date.now(), roundEnds:0 };
   rooms.set(id, room); return room;
 }
 function emitState(room) {
