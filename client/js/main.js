@@ -4,7 +4,7 @@ import { buildArena, createPlayerMesh } from "./game/scene.js";
 
 const $=id=>document.getElementById(id);
 const network=new Network();
-let scene,camera,renderer,clock,me=null,joined=false,mode="br",yaw=0,pitch=0,velocityY=0,grounded=true;
+let scene,camera,renderer,clock,flagMesh,me=null,joined=false,mode="br",yaw=0,pitch=0,velocityY=0,grounded=true;
 const meshes=new Map(),keys={},raycaster=new THREE.Raycaster();
 const strikerInfo={
  Ethan:"Protection Matrix · Barreira unidirecional com 400 HP por 30 segundos.",
@@ -27,7 +27,7 @@ function init3D(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x8799a5);scene.fog=new THREE.Fog(0x8799a5,65,145);
  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,250);
  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.domElement.style.touchAction="none";$("scene").appendChild(renderer.domElement);
- clock=new THREE.Clock();buildArena(scene);
+ clock=new THREE.Clock();flagMesh=buildArena(scene);
  window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
  renderer.domElement.addEventListener("click",()=>{if(innerWidth>700)renderer.domElement.requestPointerLock();});
  document.addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0022,-1.3,1.3);}});
@@ -65,6 +65,7 @@ function animate(){
 }
 function makePlayerMesh(p){ return createPlayerMesh(scene,p.team); }
 function renderState(state){
+ if(flagMesh)flagMesh.visible=!!state.flag?.active;
  $("modeLabel").textContent=state.mode==="br"?"BATTLE ROYALE":"SQUAD FIGHT";
  $("phaseLabel").textContent=state.phase.toUpperCase();
  $("shop").classList.toggle("hidden",state.phase!=="buy");
