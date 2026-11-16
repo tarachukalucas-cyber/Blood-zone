@@ -33,7 +33,7 @@ function roomFor(socket) {
 }
 function publicPlayer(p) {
   return { id:p.id, name:p.name, striker:p.striker, team:p.team, x:p.x, y:p.y, z:p.z,
-    yaw:p.yaw, pitch:p.pitch, hp:p.hp, maxHp:p.maxHp, armor:p.armor, armorLevel:p.armorLevel,
+    yaw:p.yaw, pitch:p.pitch, hp:p.hp, maxHp:p.maxHp, armor:p.armor, armorMax:p.armorMax, armorLevel:p.armorLevel,
     alive:p.alive, kills:p.kills, weapon:p.weapon, shield:p.shield ? {x:p.shield.x,z:p.shield.z,yaw:p.shield.yaw,hp:p.shield.hp}:null,
     turret:p.turret ? {x:p.turret.x,z:p.turret.z,hp:p.turret.hp}:null, money:p.money, wildcards:p.wildcards };
 }
@@ -41,7 +41,7 @@ function makePlayer(socket, data, team) {
   const striker = STRIKERS[data.striker] ? data.striker : "Ethan";
   return { id:socket.id, name:String(data.name || "Player").slice(0,16), striker, team,
     x:rand(-12,12), y:0, z:rand(-12,12), vx:0, vz:0, yaw:0, pitch:0,
-    hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorLevel:1, armorXp:0,
+    hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorMax:25, armorLevel:1, armorXp:0,
     alive:true, kills:0, money:800, weapon:"rifle", lastShot:0, lastAbility:0,
     input:{forward:0,right:0,sprint:false,crouch:false}, wildcards:[], shield:null, turret:null, dashUntil:0 };
 }
@@ -68,7 +68,7 @@ function resetRound(room) {
   room.round++;
   for (const p of room.players.values()) {
     p.alive=true; p.hp=p.maxHp; p.armor=25; p.x=rand(-10,10); p.z=rand(-10,10);
-    p.shield=null; p.turret=null; p.weapon="rifle"; p.armorXp=0; p.armorLevel=1;
+    p.shield=null; p.turret=null; p.weapon="rifle"; p.armorXp=0; p.armorLevel=1; p.armorMax=25;
   }
   room.phase = "buy"; room.roundEnds = Date.now()+12000;
   io.to(room.id).emit("notice", "Nova rodada! Loja aberta.");
@@ -203,7 +203,7 @@ io.on("connection",socket=>{
   });
   socket.on("pickup",id=>{
     const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive)return;
-    const item=r.pickups.find(v=>v.id===id);if(!item||dist2(p,item)>3)return;
+    const item=r.pickups.find(v=>v.id===id);const pickupRange=p.wildcards.some(w=>w.effect==="loot")?4.5:3;if(!item||dist2(p,item)>pickupRange)return;
     if(p.wildcards.length>=3){socket.emit("notice","Você já equipa 3 Wildcards.");return;}
     const card=item.card||WILDCARDS[Math.floor(Math.random()*WILDCARDS.length)];
     p.wildcards.push(card);r.pickups=r.pickups.filter(v=>v.id!==id);emitState(r);
