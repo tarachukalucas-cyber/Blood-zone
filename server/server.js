@@ -89,37 +89,61 @@ function eliminate(room, victim, killer) {
 function checkWin(room) {
   const alive=[...room.players.values()].filter(p=>p.alive);
   if (room.mode==="br" && alive.length<=1 && room.phase==="playing") {
-    room.phase="finished"; io.to(room.id).emit("matchEnd",{winner:alive[0]?.name||"Ninguém",reason:"Último sobrevivente"}); return;
+    room.phase="finished";
+    io.to(room.id).emit("matchEnd",{winner:alive[0]?.name||"Ninguém",reason:"Último sobrevivente"});
+    return;
   }
-  if (room.mode==="sf") {
+  if (room.mode==="sf" && room.phase==="playing") {
     const red=alive.filter(p=>p.team==="red"), blue=alive.filter(p=>p.team==="blue");
     if (!red.length || !blue.length) {
-      const winner=red.length?"red":"blue"; room.scores[winner]++;
+      const winner=red.length?"red":"blue";
+      room.scores[winner]++;
       io.to(room.id).emit("roundEnd",{winner,scores:room.scores});
       if (room.scores[winner]>=3) {
-        room.phase="finished"; io.to(room.id).emit("matchEnd",{winner:winner==="red"?"Equipe Vermelha":"Equipe Azul",reason:"3 rodadas vencidas"});
+        room.phase="finished";
+        io.to(room.id).emit("matchEnd",{winner:winner==="red"?"Equipe Vermelha":"Equipe Azul",reason:"3 rodadas vencidas"});
       } else if (room.scores.red===2 && room.scores.blue===2) {
         io.to(room.id).emit("notice","LAST STAND DUEL: um representante de cada equipe decide a partida!");
         resetRound(room);
-        // A primeira pessoa de cada equipe é o representante do duelo final.
+        // Keep one representative alive per team for the final 1v1.
         for (const p of room.players.values()) {
           const teammates=[...room.players.values()].filter(q=>q.team===p.team);
           if (teammates.indexOf(p)>0) p.alive=false;
         }
         room.phase="playing";
-      } else setTimeout(()=>{ if(rooms.has(room.id) && room.phase!=="finished") resetRound(room); },3500);
+      } else {
+        room.phase="roundEnd";
+        setTimeout(()=>{ if(rooms.has(room.id) && room.phase==="roundEnd") resetRound(room); },3500);
+      }
     }
   }
 }
 function applyDamage(room, target, amount, attacker, part="body") {
-  // Fictional hit zones: head 1.8x, torso 1x, limbs 0.75x.
+  // Coarse fictional hit zones: head 1.8x, torso 1x, limbs 0.75x.
   const mult=part==="head"?1.8:part==="limb"?0.75:1;
   let damage=amount*mult;
-  const absorbRate=target.striker==="Ethan"?0.72:0.65; // Ethan passive: reinforced plating.
+  // Ethan's forward-facing matrix blocks damage until its 400 HP is depleted.
+  if(attacker && target.shield) {
+    const frontDot=(attacker.x-target.shield.x)*Math.sin(target.yaw)
+      +(attacker.z-target.shield.z)*(-Math.cos(target.yaw));
+    if(frontDot>0) {
+      target.shield.hp-=amount;
+      if(target.shield.hp>0) return;
+      target.shield=null;
+    }
+  }
+  const fortified=target.wildcards.some(w=>w.effect==="armor")?0.08:0;
+  const absorbRate=Math.min(0.9,0.65+(target.armorLevel-1)*0.06+fortified+(target.striker==="Ethan"?0.07:0));
   const absorbed=Math.min(target.armor,damage*absorbRate);
-  target.armor-=absorbed; damage-=absorbed;
-  target.armorXp+=absorbed;
+  target.armor-=absorbed;
+  damage-=absorbed;
+  const oldLevel=target.armorLevel;
+  target.armorXp+=amount;
   target.armorLevel=Math.min(4,1+Math.floor(target.armorXp/35));
+  if(target.armorLevel>oldLevel) {
+    target.armorMax+=10;
+    target.armor=Math.min(target.armorMax,target.armor+12);
+  }
   target.hp-=damage;
   if(target.hp<=0) eliminate(room,target,attacker);
 }
@@ -142,6 +166,7 @@ function update(room,dt) {
   const now=Date.now();
   for(const p of room.players.values()) {
     if(!p.alive) continue;
+    if(p.wildcards.some(w=>w.effect==="heal") && p.hp<p.maxHp && now-(p.lastRegen||0)>1000){p.hp=Math.min(p.maxHp,p.hp+1);p.lastRegen=now;}
     const cfg=STRIKERS[p.striker], speed=cfg.speed*(p.input.sprint?1.35:1)*(p.input.crouch?0.55:1); // Zero passive: higher base mobility.
     const fx=-Math.sin(p.yaw), fz=-Math.cos(p.yaw), rx=Math.cos(p.yaw), rz=-Math.sin(p.yaw);
     let dx=(fx*p.input.forward+rx*p.input.right)*speed*dt;
@@ -152,7 +177,7 @@ function update(room,dt) {
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
       if(p.turret.hp<=0){p.turret=null;continue;}
-      const enemy=[...room.players.values()].filter(q=>q.alive&&q.team!==p.team&&dist2(p.turret,q)<=22).sort((a,b)=>dist2(p.turret,a)-dist2(p.turret,b))[0];
+      const enemy=[...room.players.values()].filter(q=>q.alive&&q.id!==p.id&&(room.mode!=="sf"||q.team!==p.team)&&dist2(p.turret,q)<=22).sort((a,b)=>dist2(p.turret,a)-dist2(p.turret,b))[0];
       if(enemy && now-p.turret.nextShot>=1000){p.turret.nextShot=now;applyDamage(room,enemy,15,p,"body");}
     }
   }
@@ -186,7 +211,7 @@ io.on("connection",socket=>{
   socket.on("fire",data=>{
     const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive||r.phase!=="playing")return;
     const w=WEAPONS[p.weapon]||WEAPONS.rifle,now=Date.now();if(now-p.lastShot<w.cooldown)return;p.lastShot=now;
-    const dir={x:Math.sin(p.yaw)*Math.cos(p.pitch),y:Math.sin(p.pitch),z:-Math.cos(p.yaw)*Math.cos(p.pitch)};
+    const dir={x:Math.sin(p.yaw)*Math.cos(p.pitch),y:-Math.sin(p.pitch),z:-Math.cos(p.yaw)*Math.cos(p.pitch)};
     let best=null,bestT=w.range;
     for(const q of r.players.values()){
       if(!q.alive||q.id===p.id||(r.mode==="sf"&&q.team===p.team))continue;
