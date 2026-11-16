@@ -11,7 +11,8 @@ export class Network {
   join(data) { this.socket.emit("join",data); }
   input(data) { this.socket.emit("input",data); }
   fire() { this.socket.emit("fire",{}); }
-  ability() { this.socket.emit("ability"); }\n  jump() { this.socket.emit("jump"); }
+  ability() { this.socket.emit("ability"); }
+  jump() { this.socket.emit("jump"); }
   pickup(id) { this.socket.emit("pickup",id); }
   buy(id) { this.socket.emit("buy",id); }
 }
