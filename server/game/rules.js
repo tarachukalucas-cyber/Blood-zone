@@ -12,4 +12,12 @@ const WILDCARDS = Object.freeze([
   Object.freeze({id:"fortified",name:"Fortified",rarity:"epic",effect:"armor",value:1.15}),
   Object.freeze({id:"marksman",name:"Marksman",rarity:"legendary",effect:"damage",value:1.12})
 ]);
-module.exports = { ARENA, STRIKERS, WILDCARDS };
+const OBSTACLES = Object.freeze([
+  {x:-24,z:-22,w:7,d:6,h:3},{x:24,z:-22,w:7,d:6,h:3},
+  {x:-24,z:22,w:7,d:6,h:3},{x:24,z:22,w:7,d:6,h:3},
+  {x:0,z:-38,w:16,d:4,h:4},{x:0,z:38,w:16,d:4,h:4},
+  {x:-42,z:0,w:4,d:18,h:5},{x:42,z:0,w:4,d:18,h:5},
+  {x:-12,z:-44,w:8,d:5,h:2},{x:12,z:44,w:8,d:5,h:2},
+  {x:-48,z:-38,w:9,d:9,h:5},{x:48,z:38,w:9,d:9,h:5}
+]);
+module.exports = { ARENA, STRIKERS, WILDCARDS, OBSTACLES };
