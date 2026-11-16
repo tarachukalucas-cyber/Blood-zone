@@ -238,11 +238,13 @@ export function createPlayerMesh(scene,team) {
   group.userData={armPivots,legPivots,parachute,torso,head};
   scene.add(group);return group;
 }
-export function animatePlayerMesh(group,moveAmount,time,parachuting=false) {
+export function animatePlayerMesh(group,moveAmount,time,parachuting=false,airborne=false) {
   const rig=group.userData;if(!rig)return;
-  const gait=Math.sin(time*10)*Math.min(1,moveAmount)*.6;
-  rig.legPivots[0].rotation.x=gait;rig.legPivots[1].rotation.x=-gait;
-  rig.armPivots[0].rotation.x=-gait*.72;rig.armPivots[1].rotation.x=gait*.72;
+  const gait=airborne?0:Math.sin(time*10)*Math.min(1,moveAmount)*.6;
+  rig.legPivots[0].rotation.x=airborne?(parachuting?-.18:.28):gait;
+  rig.legPivots[1].rotation.x=airborne?(parachuting?-.18:.28):-gait;
+  rig.armPivots[0].rotation.x=airborne?(parachuting?-.22:-.34):-gait*.72;
+  rig.armPivots[1].rotation.x=airborne?(parachuting?-.22:-.34):gait*.72;
   group.position.y += 0; // root height is supplied by the authoritative server snapshot
   rig.parachute.visible=!!parachuting;
   rig.parachute.rotation.z=parachuting?Math.sin(time*1.7)*.045:0;
