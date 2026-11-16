@@ -22,7 +22,8 @@ export function buildArena(scene) {
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,4),new THREE.MeshStandardMaterial({color:0x303947}));
   pole.position.y=2; flag.add(pole);
   const cloth=new THREE.Mesh(new THREE.PlaneGeometry(1.3,.75),new THREE.MeshStandardMaterial({color:0xe33c57,side:THREE.DoubleSide}));
-  cloth.position.set(.65,3.45,0); flag.add(cloth); scene.add(flag);
+  cloth.position.set(.65,3.45,0); flag.add(cloth); flag.visible=false; scene.add(flag);
+  return flag;
 }
 export function createPlayerMesh(scene,team) {
   const group=new THREE.Group();
