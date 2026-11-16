@@ -81,7 +81,7 @@ function makePlane() {
     engine.rotation.z=Math.PI/2;
     cylinder(plane,.48,.48,.35,mats.metal,2.8,0,side*8);
     const prop=new THREE.Group();prop.position.set(3,0,side*8);
-    for(let i=0;i<3;i++){const blade=box(prop,.24,2.8,.34,mats.dark,0,1.4,0);blade.rotation.x=i*Math.PI/3;}
+    for(let i=0;i<3;i++){const bladePivot=new THREE.Group();bladePivot.rotation.x=i*Math.PI*2/3;box(bladePivot,.24,2.8,.34,mats.dark,0,1.35,0);prop.add(bladePivot);}
     plane.add(prop);(plane.userData.propellers ||= []).push(prop);
     cylinder(plane,.28,.28,.25,mats.metal,-7,.2,side*2.4);
   }
@@ -213,7 +213,7 @@ export function createPlayerMesh(scene,team) {
     box(leg,.34,.06,.5,armor,0,-1.17,-.09);
   }
   const parachute=addParachute(group);
-  group.userData={armPivots,legPivots,parachute};
+  group.userData={armPivots,legPivots,parachute,torso,head};
   scene.add(group);return group;
 }
 export function animatePlayerMesh(group,moveAmount,time,parachuting=false) {
@@ -224,6 +224,8 @@ export function animatePlayerMesh(group,moveAmount,time,parachuting=false) {
   group.position.y += 0; // root height is supplied by the authoritative server snapshot
   rig.parachute.visible=!!parachuting;
   rig.parachute.rotation.z=parachuting?Math.sin(time*1.7)*.045:0;
+  rig.torso.position.y=1.23+Math.sin(time*2.4)*.012;
+  rig.head.rotation.y=Math.sin(time*1.1)*.025;
 }
 function makeHand(parent,material,x,y,z) {
   const hand=new THREE.Group();hand.position.set(x,y,z);parent.add(hand);
