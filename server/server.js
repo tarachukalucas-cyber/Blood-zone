@@ -37,7 +37,7 @@ function roomFor(socket) {
 function publicPlayer(p) {
   return { id:p.id, name:p.name, striker:p.striker, team:p.team, x:p.x, y:p.y, z:p.z,
     yaw:p.yaw, pitch:p.pitch, hp:p.hp, maxHp:p.maxHp, armor:p.armor, armorMax:p.armorMax, armorLevel:p.armorLevel,
-    alive:p.alive, kills:p.kills, weapon:p.weapon, shield:p.shield ? {x:p.shield.x,z:p.shield.z,yaw:p.shield.yaw,hp:p.shield.hp}:null,
+    alive:p.alive, deployed:p.deployed, parachuting:p.parachuting, kills:p.kills, weapon:p.weapon, shield:p.shield ? {x:p.shield.x,z:p.shield.z,yaw:p.shield.yaw,hp:p.shield.hp}:null,
     turret:p.turret ? {x:p.turret.x,z:p.turret.z,hp:p.turret.hp}:null, money:p.money, wildcards:p.wildcards };
 }
 function makePlayer(socket, data, team) {
@@ -46,7 +46,7 @@ function makePlayer(socket, data, team) {
     x:rand(-12,12), y:0, vy:0, z:rand(-12,12), vx:0, vz:0, yaw:0, pitch:0,
     hp:STRIKERS[striker].hp, maxHp:STRIKERS[striker].hp, armor:25, armorMax:25, armorLevel:1, armorXp:0,
     alive:true, kills:0, money:800, weapon:"rifle", lastShot:0, lastAbility:0,
-    input:{forward:0,right:0,sprint:false,crouch:false}, wildcards:[], shield:null, turret:null, dashUntil:0 };
+    input:{forward:0,right:0,sprint:false,crouch:false}, wildcards:[], shield:null, turret:null, dashUntil:0, deployed:true, parachuting:false };
 }
 function createRoom(id, mode) {
   const room = { id, mode, players:new Map(), phase:"waiting", round:1, scores:{red:0,blue:0},
@@ -55,23 +55,36 @@ function createRoom(id, mode) {
 }
 function emitState(room) {
   io.to(room.id).emit("state", { roomId:room.id, mode:room.mode, phase:room.phase, round:room.round,
-    scores:room.scores, zone:room.zone, flag:room.flag,
+    scores:room.scores, zone:room.zone, flag:room.flag, plane:room.plane,
     players:[...room.players.values()].map(publicPlayer),
     world:{wildcards:room.pickups, boxes:room.boxes} });
 }
 function startMatch(room) {
-  room.phase = room.mode === "sf" ? "buy" : "playing";
-  room.pickups = Array.from({length:12}, (_,i)=>({id:"w"+i,x:rand(-35,35),z:rand(-35,35),kind:"wildcard"}));
-  room.boxes = Array.from({length:14}, (_,i)=>({id:"b"+i,x:rand(-38,38),z:rand(-38,38),opened:false}));
-  if (room.mode === "sf") room.roundEnds = Date.now() + 15000;
-  else room.zoneAt = Date.now() + 45000;
-  io.to(room.id).emit("notice", room.mode === "br" ? "Battle Royale iniciado!" : "Loja aberta — prepare seu equipamento.");
+  room.pickups = Array.from({length:26}, (_,i)=>({id:"w"+i,x:rand(-ARENA*.78,ARENA*.78),z:rand(-ARENA*.78,ARENA*.78),kind:"wildcard"}));
+  room.boxes = Array.from({length:34}, (_,i)=>({id:"b"+i,x:rand(-ARENA*.82,ARENA*.82),z:rand(-ARENA*.82,ARENA*.82),opened:false}));
+  if (room.mode === "sf") {
+    room.phase = "buy";
+    room.roundEnds = Date.now() + 15000;
+    io.to(room.id).emit("notice","Loja aberta — prepare seu equipamento.");
+  } else {
+    room.phase = "insertion";
+    room.plane = {x:-ARENA+8,y:118,z:-28,active:true};
+    room.insertEnds = Date.now()+28000;
+    room.zoneAt = Date.now()+90000;
+    let seat=0;
+    for(const p of room.players.values()) {
+      p.deployed=false; p.parachuting=false;
+      p.x=room.plane.x; p.y=room.plane.y; p.vy=0;
+      p.z=room.plane.z+(seat++-(room.players.size-1)/2)*3;
+    }
+    io.to(room.id).emit("notice","Aeronave a caminho! Pressione SALTAR quando quiser iniciar a queda.");
+  }
 }
 function resetRound(room) {
   room.round++;
   for (const p of room.players.values()) {
     p.alive=true; p.hp=p.maxHp; p.armor=p.armorMax; p.x=rand(-10,10); p.y=0; p.vy=0; p.z=rand(-10,10);
-    p.shield=null; p.turret=null; p.armorXp=0; p.armorLevel=1; p.armorMax=25;
+    p.shield=null; p.turret=null; p.armorXp=0; p.armorLevel=1; p.armorMax=25; p.deployed=true; p.parachuting=false;
   }
   room.phase = "buy"; room.roundEnds = Date.now()+12000;
   io.to(room.id).emit("notice", "Nova rodada! Loja aberta.");
@@ -169,6 +182,7 @@ function update(room,dt) {
   const now=Date.now();
   for(const p of room.players.values()) {
     if(!p.alive) continue;
+    if(room.mode==="br" && !p.deployed) { if(room.plane?.active){p.x=room.plane.x;p.y=room.plane.y;p.z=room.plane.z+(p.seatOffset||0);} continue; }
     if(p.wildcards.some(w=>w.effect==="heal") && p.hp<p.maxHp && now-(p.lastRegen||0)>1000){p.hp=Math.min(p.maxHp,p.hp+1);p.lastRegen=now;}
     const cfg=STRIKERS[p.striker], speed=cfg.speed*(p.input.sprint?1.35:1)*(p.input.crouch?0.55:1); // Zero passive: higher base mobility.
     const fx=-Math.sin(p.yaw), fz=-Math.cos(p.yaw), rx=Math.cos(p.yaw), rz=-Math.sin(p.yaw);
@@ -179,12 +193,21 @@ function update(room,dt) {
     // Axis-separated AABB checks keep players from walking through arena cover.
     if(!blocked(nextX,p.z))p.x=nextX;
     if(!blocked(p.x,nextZ))p.z=nextZ;
-    p.vy-=18*dt; p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0)p.vy=0;
+    if(p.y>0){p.vy-=p.parachuting?4.5:18; if(p.parachuting)p.vy=Math.max(p.vy,-6); p.y=Math.max(0,p.y+p.vy*dt); if(p.y===0){p.vy=0;p.parachuting=false;}}
     if(p.shield && (p.shield.expires<now||p.shield.hp<=0)) p.shield=null;
     if(p.turret) {
       if(p.turret.hp<=0){p.turret=null;continue;}
       const enemy=[...room.players.values()].filter(q=>q.alive&&q.id!==p.id&&(room.mode!=="sf"||q.team!==p.team)&&dist2(p.turret,q)<=22).sort((a,b)=>dist2(p.turret,a)-dist2(p.turret,b))[0];
       if(enemy && now-p.turret.nextShot>=1000){p.turret.nextShot=now;applyDamage(room,enemy,15,p,"body");}
+    }
+  }
+  if(room.mode==="br" && room.plane?.active && (room.phase==="insertion"||room.phase==="playing")) {
+    room.plane.x += 15*dt;
+    if(room.plane.x >= ARENA-5 || now > room.insertEnds) {
+      room.plane.active=false;
+      for(const p of room.players.values()) if(!p.deployed){p.deployed=true;p.parachuting=true;p.vy=-3.5;}
+      if(room.phase==="insertion") room.phase="playing";
+      io.to(room.id).emit("notice","A aeronave deixou a área. Salto automático!");
     }
   }
   if(room.mode==="br"&&room.phase==="playing"&&now>(room.zoneAt||0)) {
@@ -204,19 +227,32 @@ io.on("connection",socket=>{
     let room=[...rooms.values()].find(r=>r.mode===mode&&r.phase!=="finished"&&r.players.size<(mode==="br"?24:10));
     if(!room) room=createRoom("BZ-"+Math.random().toString(36).slice(2,7).toUpperCase(),mode);
     const team=mode==="sf"?( [...room.players.values()].filter(p=>p.team==="red").length <= [...room.players.values()].filter(p=>p.team==="blue").length ? "red":"blue"):"solo";
-    const p=makePlayer(socket,data,team); room.players.set(socket.id,p); socket.join(room.id);
+    const p=makePlayer(socket,data,team);
+    if(mode==="br" && room.phase==="insertion" && room.plane?.active) {
+      p.deployed=false;p.x=room.plane.x;p.y=room.plane.y;p.z=room.plane.z+(room.players.size*3);
+    }
+    room.players.set(socket.id,p); socket.join(room.id);
     socket.emit("joined",{id:socket.id,roomId:room.id,team,players:[...room.players.values()].map(publicPlayer)});
     if(room.phase==="waiting"&&room.players.size>=2) startMatch(room);
     emitState(room);
   });
-  socket.on("input",data=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(!p||!p.alive)return;
+  socket.on("input",data=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(!p||!p.alive||!p.deployed)return;
     p.input={forward:clamp(Number(data.forward)||0,-1,1),right:clamp(Number(data.right)||0,-1,1),sprint:!!data.sprint,crouch:!!data.crouch};
     p.yaw=Number.isFinite(data.yaw)?data.yaw:p.yaw;p.pitch=clamp(Number(data.pitch)||0,-1.35,1.35);
   });
-  socket.on("jump",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(p?.alive&&p.y<=0.02)p.vy=7.5;});
-  socket.on("ability",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(r&&p?.alive&&r.phase==="playing")useAbility(r,p);});
+  socket.on("drop",()=> {
+    const r=roomFor(socket),p=r?.players.get(socket.id);
+    if(!r||r.mode!=="br"||!p?.alive||p.deployed||!r.plane?.active)return;
+    p.deployed=true;p.parachuting=true;p.vy=-3.5;p.x=r.plane.x;p.y=r.plane.y;
+    p.z=r.plane.z+(Math.random()-.5)*9;
+    r.phase="playing";
+    socket.emit("notice","Salto iniciado! Use WASD para planar e escolher o ponto de pouso.");
+    emitState(r);
+  });
+  socket.on("jump",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(p?.alive&&p.deployed&&!p.parachuting&&p.y<=0.02)p.vy=7.5;});
+  socket.on("ability",()=>{const r=roomFor(socket),p=r?.players.get(socket.id);if(r&&p?.alive&&p.deployed&&r.phase==="playing")useAbility(r,p);});
   socket.on("fire",data=>{
-    const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive||r.phase!=="playing")return;
+    const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive||!p.deployed||r.phase!=="playing")return;
     const w=WEAPONS[p.weapon]||WEAPONS.rifle,now=Date.now();if(now-p.lastShot<w.cooldown)return;p.lastShot=now;
     const dir={x:Math.sin(p.yaw)*Math.cos(p.pitch),y:-Math.sin(p.pitch),z:-Math.cos(p.yaw)*Math.cos(p.pitch)};
     let best=null,bestT=w.range;
@@ -236,7 +272,7 @@ io.on("connection",socket=>{
     }
   });
   socket.on("pickup",id=>{
-    const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive)return;
+    const r=roomFor(socket),p=r?.players.get(socket.id);if(!r||!p?.alive||!p.deployed)return;
     const item=(r.pickups||[]).find(v=>v.id===id);const pickupRange=p.wildcards.some(w=>w.effect==="loot")?4.5:3;if(!item||dist2(p,item)>pickupRange)return;
     if(p.wildcards.length>=3){socket.emit("notice","Você já equipa 3 Wildcards.");return;}
     const card=item.card||WILDCARDS[Math.floor(Math.random()*WILDCARDS.length)];
