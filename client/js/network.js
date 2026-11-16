@@ -13,6 +13,7 @@ export class Network {
   fire() { this.socket.emit("fire",{}); }
   ability() { this.socket.emit("ability"); }
   jump() { this.socket.emit("jump"); }
+  drop() { this.socket.emit("drop"); }
   pickup(id) { this.socket.emit("pickup",id); }
   buy(id) { this.socket.emit("buy",id); }
 }
