@@ -191,7 +191,8 @@ export function buildArena(scene) {
   const dish=new THREE.Mesh(new THREE.SphereGeometry(4,12,8,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0xb9c3c7,metalness:.55,side:THREE.DoubleSide}));
   dish.position.set(0,15,0);dish.rotation.x=Math.PI;radar.add(dish);scene.add(radar);
   // Scenic trees and rocks are placed outside main roads and building entrances.
-  for(let i=0;i<96;i++){
+  const treeCount=innerWidth<=700?58:96;
+  for(let i=0;i<treeCount;i++){
     const x=(Math.sin(i*91.7)*.5+.5)*410-205,z=(Math.cos(i*37.1)*.5+.5)*410-205;
     if(Math.abs(x)<15||Math.abs(z)<15)continue;
     if(obstacles.some(o=>Math.abs(x-o.x)<o.w/2+5&&Math.abs(z-o.z)<o.d/2+5))continue;
