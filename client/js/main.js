@@ -26,12 +26,12 @@ network.on("hitConfirm",data=>showNotice("ACERTO — "+data.part+" · "+data.dam
 function init3D(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x8799a5);scene.fog=new THREE.Fog(0x8799a5,65,145);
  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,250);
- renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$("scene").appendChild(renderer.domElement);
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.domElement.style.touchAction="none";$("scene").appendChild(renderer.domElement);
  clock=new THREE.Clock();buildArena(scene);
  window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
  renderer.domElement.addEventListener("click",()=>{if(innerWidth>700)renderer.domElement.requestPointerLock();});
  document.addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0022,-1.3,1.3);}});
- renderer.domElement.addEventListener("mousedown",e=>{if(e.button===0)network.fire();});
+ renderer.domElement.addEventListener("mousedown",e=>{if(e.button===0)network.fire();});\n let touchLook=null;\n renderer.domElement.addEventListener("touchstart",e=>{const t=e.changedTouches[0];if(t.clientX>innerWidth*.38)touchLook={x:t.clientX,y:t.clientY,id:t.identifier};},{passive:true});\n renderer.domElement.addEventListener("touchmove",e=>{if(!touchLook)return;const t=[...e.changedTouches].find(v=>v.identifier===touchLook.id);if(!t)return;yaw-=(t.clientX-touchLook.x)*.006;pitch=THREE.MathUtils.clamp(pitch-(t.clientY-touchLook.y)*.006,-1.3,1.3);touchLook.x=t.clientX;touchLook.y=t.clientY;},{passive:true});\n renderer.domElement.addEventListener("touchend",()=>touchLook=null);
  document.addEventListener("keydown",e=>{keys[e.code]=true;if(e.code==="KeyQ")network.ability();if(e.code==="KeyE")tryPickup();if(e.code==="Space"&&grounded){velocityY=7;grounded=false;}});
  document.addEventListener("keyup",e=>keys[e.code]=false);
  $("abilityBtn").onclick=()=>network.ability();
@@ -69,7 +69,7 @@ function renderState(state){
  for(const p of state.players){present.add(p.id);let m=meshes.get(p.id);if(!m){m=makePlayerMesh(p);meshes.set(p.id,m);}
   m.position.set(p.x,p.y||0,p.z);m.rotation.y=p.yaw;
   if(p.id===me){$("hp").textContent=Math.max(0,Math.round(p.hp));$("hpBar").style.width=Math.max(0,p.hp/p.maxHp*100)+"%";
-   $("armor").textContent=Math.round(p.armor);$("armorBar").style.width=Math.max(0,p.armor/50*100)+"%";
+   $("armor").textContent=Math.round(p.armor);$("armorBar").style.width=Math.max(0,p.armor/(p.armorMax||25)*100)+"%";
    $("armorLevel").textContent=["I","II","III"][Math.min(2,p.armorLevel-1)]||"III";
    $("kills").textContent="ABATES "+p.kills;$("money").textContent="$"+p.money;$("weapon").textContent=(p.weapon||"rifle").toUpperCase();
    $("wildcards").textContent="WILDCARDS: "+p.wildcards.length+"/3";
