@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#090b13"><title>Blood Zone — Multiplayer FPS</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <main id="menu" class="menu">
+    <div class="brand"><span class="brand-mark">BZ</span><div><small>ONLINE COMBAT</small><h1>BLOOD <b>ZONE</b></h1></div></div>
+    <p class="tagline">ENTRE NA ARENA. SOBREVIVA. VENÇA.</p>
+    <section class="panel">
+      <label>Nome do jogador<input id="playerName" maxlength="16" value="Player"></label>
+      <label>Striker<select id="striker"><option>Ethan</option><option>Zero</option><option>Hank</option></select></label>
+      <div class="ability-info" id="abilityInfo">Protection Matrix · Barreira frontal por 30 segundos.</div>
+      <label>Modo de jogo<select id="mode"><option value="br">Battle Royale</option><option value="sf">Squad Fight</option></select></label>
+      <button id="playBtn" class="primary">CONECTAR E JOGAR</button>
+      <p class="small">Multiplayer online · Protótipo de navegador</p>
+    </section>
+    <div class="feature-row"><span>3 STRIKERS</span><span>WILDCARDS</span><span>3D ONLINE</span></div>
+  </main>
+  <div id="game" class="hidden">
+    <div id="scene"></div>
+    <div class="topbar"><div id="roomLabel">SALA —</div><div id="modeLabel">BATTLE ROYALE</div><div id="phaseLabel">CONECTANDO</div></div>
+    <div class="crosshair"><i></i><b></b></div>
+    <div class="hud">
+      <div class="health"><span>HP</span><strong id="hp">100</strong><div class="bar"><i id="hpBar"></i></div></div>
+      <div class="armor"><span>ARMADURA <b id="armorLevel">I</b></span><strong id="armor">25</strong><div class="bar"><i id="armorBar"></i></div></div>
+      <div class="weapon" id="weapon">RIFLE</div>
+      <div class="wildcards" id="wildcards">WILDCARDS: 0/3</div>
+    </div>
+    <div class="right-hud"><div id="kills">ABATES 0</div><div id="money">$800</div><div id="scores"></div></div>
+    <div id="notice" class="notice"></div>
+    <button id="abilityBtn" class="ability-btn">HABILIDADE <small>Q</small></button>
+    <div id="shop" class="shop hidden"><h2>LOJA DE EQUIPAMENTO</h2><div class="shop-items">
+      <button data-buy="smg">SMG <b>$1800</b></button><button data-buy="marksman">MARKSMAN <b>$2600</b></button><button data-buy="shotgun">SCATTER <b>$2200</b></button>
+    </div></div>
+    <div id="mobileControls" class="mobile-controls">
+      <div id="stick" class="stick"><i></i></div><button id="fireTouch">ATIRAR</button><button id="jumpTouch">PULAR</button>
+    </div>
+    <div class="help">WASD mover · Mouse mirar/atirar · Shift correr · Ctrl agachar · Espaço pular · Q habilidade · E coletar</div>
+    <div id="endPanel" class="end-panel hidden"><h2 id="endTitle">FIM DE PARTIDA</h2><p id="endReason"></p><button onclick="location.reload()">VOLTAR AO MENU</button></div>
+  </div>
+  <script type="module" src="/js/main.js"></script>
+</body></html>
