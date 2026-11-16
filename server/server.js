@@ -74,8 +74,9 @@ function startMatch(room) {
     let seat=0;
     for(const p of room.players.values()) {
       p.deployed=false; p.parachuting=false;
+      p.seatOffset=(seat++-(room.players.size-1)/2)*3;
       p.x=room.plane.x; p.y=room.plane.y; p.vy=0;
-      p.z=room.plane.z+(seat++-(room.players.size-1)/2)*3;
+      p.z=room.plane.z+p.seatOffset;
     }
     io.to(room.id).emit("notice","Aeronave a caminho! Pressione SALTAR quando quiser iniciar a queda.");
   }
@@ -229,7 +230,7 @@ io.on("connection",socket=>{
     const team=mode==="sf"?( [...room.players.values()].filter(p=>p.team==="red").length <= [...room.players.values()].filter(p=>p.team==="blue").length ? "red":"blue"):"solo";
     const p=makePlayer(socket,data,team);
     if(mode==="br" && room.phase==="insertion" && room.plane?.active) {
-      p.deployed=false;p.x=room.plane.x;p.y=room.plane.y;p.z=room.plane.z+(room.players.size*3);
+      p.deployed=false;p.seatOffset=room.players.size*3;p.x=room.plane.x;p.y=room.plane.y;p.z=room.plane.z+p.seatOffset;
     }
     room.players.set(socket.id,p); socket.join(room.id);
     socket.emit("joined",{id:socket.id,roomId:room.id,team,players:[...room.players.values()].map(publicPlayer)});
