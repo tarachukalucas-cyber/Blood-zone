@@ -15,7 +15,7 @@ npm start
 ``
 Abra http://localhost:3000.
 
-## Multiplayer
+## Estrutura\n\n- `server/server.js`: salas, simulação e eventos Socket.IO autoritativos.\n- `server/game/rules.js`: configuração de Strikers, Wildcards e obstáculos.\n- `client/js/main.js`: loop de jogo, controles e HUD.\n- `client/js/game/scene.js`: arena Three.js e modelos geométricos.\n- `client/js/network.js`: camada de comunicação em tempo real.\n\n## Multiplayer
 1. Abra o endereço em duas abas ou em dois computadores conectados à mesma rede.
 2. Para testar na mesma rede, descubra o IP local do computador servidor e abra `http://IP-DO-SERVIDOR:3000` no outro dispositivo.
 3. Selecione o mesmo modo e entre. O servidor faz o pareamento automático em uma sala.
