@@ -8,12 +8,15 @@ export function buildArena(scene) {
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x566a57,roughness:1}));
   ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
   const grid=new THREE.GridHelper(180,36,0x435b51,0x65776b); grid.position.y=.02; scene.add(grid);
-  // Cover props are decorative and intentionally use simple collision-free geometry in this prototype.
-  for(let i=0;i<34;i++){
-    const w=2+Math.random()*4,h=1+Math.random()*3,d=2+Math.random()*4;
-    const box=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:i%3===0?0x6d5360:0x777f7e}));
-    box.position.set((Math.random()-.5)*100,h/2,(Math.random()-.5)*100);
-    box.castShadow=true; box.receiveShadow=true; scene.add(box);
+  // Fixed cover layout matches the server's collision map.
+  const obstacles=[
+    [-24,-22,7,6,3],[24,-22,7,6,3],[-24,22,7,6,3],[24,22,7,6,3],
+    [0,-38,16,4,4],[0,38,16,4,4],[-42,0,4,18,5],[42,0,4,18,5],
+    [-12,-44,8,5,2],[12,44,8,5,2],[-48,-38,9,9,5],[48,38,9,9,5]
+  ];
+  for(const [x,z,w,d,h] of obstacles){
+    const box=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x777f7e}));
+    box.position.set(x,h/2,z);box.castShadow=true;box.receiveShadow=true;scene.add(box);
   }
   const flag=new THREE.Group();
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,4),new THREE.MeshStandardMaterial({color:0x303947}));
