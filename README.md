@@ -1,12 +1,11 @@
 # Blood Zone
 
-FPS multiplayer 3D para navegador, construído com Three.js, Node.js, Express e Socket.IO. É um projeto original inspirado no ritmo dos battle royales; não utiliza arquivos ou recursos proprietários de Blood Strike.
+FPS multiplayer 3D para navegador, desenvolvido com Three.js, Node.js, Express e Socket.IO. Projeto original inspirado na experiência de battle royale, sem reutilizar arquivos ou recursos proprietários de Blood Strike.
 
-## Requisitos
+## Requisitos e instalação
 - Node.js 20 ou superior
 - npm
 
-## Instalação
 ```bash
 git clone https://github.com/tarachukalucas-cyber/Blood-zone.git
 cd Blood-zone
@@ -14,55 +13,63 @@ npm install
 npm start
 ```
 
-Abra http://localhost:3000. Para validar a sintaxe dos módulos, execute `npm run check`.
+Abra http://localhost:3000. Use `npm run check` para verificar a sintaxe dos módulos JavaScript.
 
 ## Estrutura
-- `server/server.js`: salas, simulação e eventos Socket.IO autoritativos.
-- `server/game/rules.js`: configuração de Strikers, Wildcards e obstáculos.
-- `client/index.html`: menu e HUD.
-- `client/css/style.css`: interface responsiva.
-- `client/js/main.js`: loop de jogo, controles e HUD.
-- `client/js/game/scene.js`: arena Three.js e modelos geométricos.
-- `client/js/network.js`: comunicação em tempo real.
+- `server/server.js`: salas, simulação e eventos multiplayer autoritativos.
+- `server/game/rules.js`: regras, personagens, Wildcards e colisões da arena.
+- `client/index.html` e `client/css/style.css`: menu e HUD responsivo.
+- `client/js/main.js`: câmera, input, renderização e sincronização.
+- `client/js/game/scene.js`: mapa, avião, personagens, mãos, armas e animações.
+- `client/js/network.js`: eventos Socket.IO do cliente.
 
-## Multiplayer
-1. Abra o endereço em duas abas ou em dois computadores conectados à mesma rede.
-2. Para testar na mesma rede, descubra o IP local do computador servidor e abra `http://IP-DO-SERVIDOR:3000` no outro dispositivo.
-3. Selecione o mesmo modo e entre. O servidor faz o pareamento automático em uma sala.
-4. Para jogar pela internet, publique o serviço Node em Render ou Railway e use a URL HTTPS fornecida pela plataforma.
+## Atualização visual desta versão
+- Mapa expandido para uma arena de aproximadamente 440 x 440 metros, com cinco áreas identificadas: Downtown, Industrial Yard, Old Village, Port Sector e Radar Ridge.
+- Prédios de vários tamanhos, armazéns, casas, contêineres/estruturas industriais, estradas, postes, árvores, radar, guindaste e montanhas low-poly.
+- Colisões do servidor alinhadas com os volumes principais dos edifícios.
+- Avião de transporte no início do Battle Royale, com hélices animadas e rota atravessando a ilha.
+- Jogadores podem saltar da aeronave pelo botão na tela ou tecla F; quem permanecer a bordo é lançado automaticamente quando o avião sai da área.
+- Paraquedas com descida controlada e direção no ar.
+- Strikers com capacete, máscara, colete, placas de proteção, mochila, luvas, braços e pernas articulados.
+- Visão em primeira pessoa com duas mãos, luvas e rifle geométrico detalhado.
+- Animações de caminhada/corrida, movimento de braços e pernas, respiração, oscilação da câmera/arma, recuo e hélices.
 
-A sala BR aceita até 24 jogadores e inicia com 2 para facilitar testes. Squad Fight aceita até 10 jogadores, divididos em duas equipes. Em produção, o mínimo de jogadores pode ser aumentado.
+## Multiplayer e testes
+1. Inicie com `npm start`.
+2. Abra http://localhost:3000 em duas abas e entre no mesmo modo.
+3. No Battle Royale, ambos entram na aeronave; use **SALTAR DO AVIÃO** ou **F** para iniciar o paraquedas.
+4. Em outra máquina da mesma rede, abra `http://IP-LOCAL-DO-SERVIDOR:3000`.
+
+Battle Royale aceita até 24 jogadores e inicia com dois para facilitar testes. Squad Fight aceita até dez jogadores.
 
 ## Controles
 - WASD: movimentar
 - Mouse: mirar; clique esquerdo: disparar
 - Shift: correr
 - Ctrl: agachar
-- Espaço: pular
+- Espaço: pular depois de pousar
+- F: saltar da aeronave
 - Q: habilidade do Striker
 - E: coletar Wildcard
-- Celular: joystick virtual, arrastar o lado direito para mirar, botão de tiro e pulo
+- Celular: joystick à esquerda, arrastar o lado direito para mirar, botões de tiro, salto e salto da aeronave
 
-## Sistemas incluídos
+## Sistemas de jogo
 - Ethan: Protection Matrix frontal com 400 HP e duração de 30 segundos; passiva de armadura reforçada.
-- Zero: Shadowstrike de mobilidade; passiva de velocidade e recarga de habilidade reduzida.
-- Hank: torreta com 100 HP e 15 de dano por segundo; passiva de alcance de detecção ampliado.
-- Wildcards com raridades, até três equipadas e uma carta aleatória dropada ao morrer. Efeitos de velocidade, cura, armadura, coleta e dano.
-- Armadura que evolui ao absorver dano, aumenta sua capacidade e sua eficiência.
-- Battle Royale com zona que encolhe e Sudden Death Flag que aparece no meio/final da partida.
-- Squad Fight com equipes, $600 por eliminação, loja entre rodadas, equipamento persistente e vitória por três rodadas. No empate 2–2, a rodada decisiva vira um duelo 1v1; 3–3 não é possível em um formato de primeira equipe a três vitórias.
+- Zero: Shadowstrike e mobilidade superior.
+- Hank: torreta com 100 HP e 15 de dano por segundo.
+- Wildcards com raridades, até três equipadas e efeitos passivos.
+- Armadura evolutiva, zona de segurança e Sudden Death Flag.
+- Squad Fight com equipes, $600 por eliminação, loja e vitória por três rodadas.
 - Hit zones simplificadas com multiplicadores para cabeça, tronco e membros.
-- Colisões autoritativas com a cobertura da arena e gravidade/pulo sincronizados.
-- Servidor controla posições, vida, dano, cooldowns, habilidades, eliminações e dinheiro. O cliente envia intenção de movimento e pedidos de ação, não valores de vida ou pontuação.
+- O servidor controla posições, dano, vida, cooldowns, habilidades, eliminações e dinheiro. O cliente envia intenções de movimento e ações.
 
 ## Deploy
-O arquivo `render.yaml` já define um serviço web Node:
-- Build command: `npm install`
-- Start command: `npm start`
-- Porta: definida automaticamente por `process.env.PORT`
+O arquivo `render.yaml` prepara um serviço Node no Render:
+- Build: `npm install`
+- Start: `npm start`
 - Health check: `/health`
 
-No Railway, crie um serviço a partir do repositório e use `npm install` e `npm start`. Para produção, restrinja CORS ao domínio do jogo, adicione autenticação, validação anti-cheat mais forte, persistência e proteção contra abuso.
+No Railway, use os mesmos comandos de instalação e inicialização. Configure CORS para o domínio do jogo antes de abrir o serviço publicamente.
 
-## Escopo
-Esta é uma primeira base multiplayer jogável para expansão, não uma reprodução integral do produto comercial. Os modelos são geométricos e o mapa é compacto. Ainda faltam animações avançadas, áudio, armas 3D detalhadas, bots, persistência de contas e testes de carga com partidas cheias.
+## Limitações conhecidas
+Os modelos são construídos proceduralmente com geometrias Three.js, sem pacotes de animação ou assets externos. Esta atualização melhora a apresentação e cria a sequência de entrada aérea; não representa uma reprodução completa do Blood Strike comercial. Ainda são necessários playtests, otimização de rede sob carga, áudio, animações de recarga/contextuais e modelos artísticos finais.
