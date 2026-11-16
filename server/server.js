@@ -84,8 +84,8 @@ function startMatch(room) {
 function resetRound(room) {
   room.round++;
   for (const p of room.players.values()) {
-    p.alive=true; p.hp=p.maxHp; p.armor=p.armorMax; p.x=rand(-10,10); p.y=0; p.vy=0; p.z=rand(-10,10);
-    p.shield=null; p.turret=null; p.armorXp=0; p.armorLevel=1; p.armorMax=25; p.deployed=true; p.parachuting=false;
+    p.alive=true; p.hp=p.maxHp; p.armorMax=25; p.armor=25; p.x=rand(-10,10); p.y=0; p.vy=0; p.z=rand(-10,10);
+    p.shield=null; p.turret=null; p.armorXp=0; p.armorLevel=1; p.deployed=true; p.parachuting=false;
   }
   room.phase = "buy"; room.roundEnds = Date.now()+12000;
   io.to(room.id).emit("notice", "Nova rodada! Loja aberta.");
