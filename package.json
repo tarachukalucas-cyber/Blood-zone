@@ -6,9 +6,12 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "dev": "node --watch server/server.js"
+    "dev": "node --watch server/server.js",
+    "check": "node --check server/server.js && node --check server/game/rules.js && node --check client/js/main.js && node --check client/js/network.js && node --check client/js/game/scene.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "cannon-es": "^0.20.0",
     "express": "^4.21.2",
