@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Network } from "./network.js";
 import {
   buildArena, createPlayerMesh, animatePlayerMesh,
-  createFirstPersonRig, animateFirstPersonRig, animatePlane
+  createFirstPersonRig, animateFirstPersonRig, animatePlane, setFirstPersonWeapon
 } from "./game/scene.js";
 
 const $=id=>document.getElementById(id);
@@ -114,7 +114,7 @@ function animate(){
    if(m.userData.targetPos){
     m.position.lerp(m.userData.targetPos,1-Math.exp(-dt*13));
     m.rotation.y=THREE.MathUtils.lerp(m.rotation.y,m.userData.targetYaw||0,1-Math.exp(-dt*15));
-    animatePlayerMesh(m,m.userData.moveAmount||0,time,m.userData.parachuting);
+    animatePlayerMesh(m,m.userData.moveAmount||0,time,m.userData.parachuting,m.position.y>.12);
    }
   }
   const local=meshes.get(me);
@@ -129,7 +129,7 @@ function animate(){
     camera.position.set(local.position.x,local.position.y+1.62,local.position.z);
     camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0);
     firstPersonRig.visible=!!localPlayerState.alive;
-    animateFirstPersonRig(firstPersonRig,time,Math.hypot(fwd,side)>.05,sprint,localPlayerState.parachuting,dt);
+    animateFirstPersonRig(firstPersonRig,time,Math.hypot(fwd,side)>.05,sprint,localPlayerState.parachuting||localPlayerState.y>.12,dt);
    }
   }
  }
@@ -171,6 +171,7 @@ function renderState(state){
    $("armorLevel").textContent=["I","II","III","IV"][Math.min(3,p.armorLevel-1)]||"IV";
    $("kills").textContent="ABATES "+p.kills;$("money").textContent="$"+p.money;
    $("weapon").textContent=(p.weapon||"rifle").toUpperCase();
+   setFirstPersonWeapon(firstPersonRig,p.weapon||"rifle");
    $("wildcards").textContent="WILDCARDS: "+p.wildcards.length+"/3";
    $("dropBtn").classList.toggle("hidden",state.mode!=="br"||p.deployed||!p.alive);
   }
