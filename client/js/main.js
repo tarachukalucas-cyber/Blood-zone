@@ -40,9 +40,10 @@ function shoot(){
 function init3D(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x8da0a5);scene.fog=new THREE.Fog(0x8da0a5,180,430);
  camera=new THREE.PerspectiveCamera(76,innerWidth/innerHeight,.08,900);scene.add(camera); // camera children render the first-person arms and weapon.
- renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));renderer.setSize(innerWidth,innerHeight);
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ const mobileQuality=innerWidth<=700||navigator.maxTouchPoints>0;
+ renderer=new THREE.WebGLRenderer({antialias:!mobileQuality,powerPreference:"high-performance"});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,mobileQuality?1.15:1.65));renderer.setSize(innerWidth,innerHeight);
+ renderer.shadowMap.enabled=!mobileQuality;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.domElement.style.touchAction="none";$("scene").appendChild(renderer.domElement);
  clock=new THREE.Clock();worldMeshes=buildArena(scene);firstPersonRig=createFirstPersonRig(camera);
  window.addEventListener("resize",()=>{
