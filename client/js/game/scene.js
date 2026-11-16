@@ -264,21 +264,21 @@ function makeWeaponModel(type="rifle") {
   const trim=new THREE.MeshStandardMaterial({color:0x617984,metalness:.62,roughness:.3});
   const glow=new THREE.MeshStandardMaterial({color:0x38d8ed,emissive:0x087c9d,emissiveIntensity:1.8,metalness:.25,roughness:.22});
   const warm=new THREE.MeshStandardMaterial({color:0xff9d54,emissive:0x8b3212,emissiveIntensity:1.3});
-  const length=type==="marksman"?1.18:type==="shotgun"?.82:type==="smg"?.58:.9;
+  const length=type==="marksman" ? 1.18 : type==="shotgun" ? .82 : type==="smg" ? .58 : .9;
   box(model,.28,.25,length,chassis,0,0,0);
   box(model,.34,.07,length*.68,trim,0,.16,-.01);
   box(model,.08,.31,length*.48,chassis,-.2,0,-.02);
   box(model,.08,.31,length*.48,chassis,.2,0,-.02);
-  const core=new THREE.Mesh(new THREE.OctahedronGeometry(type==="marksman"?.17:.14,1),glow);
+  const core=new THREE.Mesh(new THREE.OctahedronGeometry(type==="marksman" ? .17 : .14,1),glow);
   core.position.set(0,.06,-.08);model.add(core);
   const ringCount=type==="marksman"?3:1;
   for(let i=0;i<ringCount;i++){
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(type==="marksman"?.16:.13,.035,7,14),trim);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(type==="marksman" ? .16 : .13,.035,7,14),trim);
     ring.position.set(0,.02,-length*.31-i*.17);model.add(ring);
   }
   const emitters=type==="shotgun"?[-.13,0,.13]:type==="smg"?[-.1,.1]:[0];
   for(const x of emitters){
-    const orb=new THREE.Mesh(new THREE.SphereGeometry(type==="marksman"?.1:.085,10,8),glow);
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(type==="marksman" ? .1 : .085,10,8),glow);
     orb.position.set(x,.025,-length*.52);model.add(orb);
     const collar=new THREE.Mesh(new THREE.TorusGeometry(.105,.025,6,12),warm);
     collar.position.set(x,.025,-length*.49);model.add(collar);
