@@ -23,21 +23,21 @@ Abra http://localhost:3000. Use `npm run check` para verificar a sintaxe dos mó
 - `client/js/game/scene.js`: mapa, avião, personagens, mãos, armas e animações.
 - `client/js/network.js`: eventos Socket.IO do cliente.
 
-## Atualização visual desta versão
-- Mapa expandido para uma arena de aproximadamente 440 x 440 metros, com cinco áreas identificadas: Downtown, Industrial Yard, Old Village, Port Sector e Radar Ridge.
-- Prédios de vários tamanhos, armazéns, casas, contêineres/estruturas industriais, estradas, postes, árvores, radar, guindaste e montanhas low-poly.
-- Colisões do servidor alinhadas com os volumes principais dos edifícios.
-- Avião de transporte no início do Battle Royale, com hélices animadas e rota atravessando a ilha.
-- Jogadores podem saltar da aeronave pelo botão na tela ou tecla F; quem permanecer a bordo é lançado automaticamente quando o avião sai da área.
+## Atualização visual e mapa
+- Arena ampliada para aproximadamente 440 x 440 metros, com cinco regiões identificadas: Downtown, Industrial Yard, Old Village, Port Sector e Radar Ridge.
+- Prédios de diferentes alturas, casas, armazéns, estradas, postes de iluminação, árvores low-poly, guindaste portuário, radar e montanhas no horizonte.
+- Colisões autoritativas no servidor para as estruturas principais do mapa.
+- Avião de transporte no início do Battle Royale, com fuselagem, asas, motores, trem de pouso e hélices animadas.
+- Salto manual da aeronave com botão na tela ou tecla F; quem permanecer a bordo é lançado automaticamente ao final da rota.
 - Paraquedas com descida controlada e direção no ar.
 - Strikers com capacete, máscara, colete, placas de proteção, mochila, luvas, braços e pernas articulados.
-- Visão em primeira pessoa com duas mãos, luvas e rifle geométrico detalhado.
-- Animações de caminhada/corrida, movimento de braços e pernas, respiração, oscilação da câmera/arma, recuo e hélices.
+- Visão em primeira pessoa com mãos/luvas e modelos geométricos separados para Rifle, SMG, Marksman e Shotgun.
+- Animações de caminhada/corrida, movimento dos membros, respiração, oscilação de câmera/arma, recuo, pose aérea e hélices.
 
 ## Multiplayer e testes
 1. Inicie com `npm start`.
 2. Abra http://localhost:3000 em duas abas e entre no mesmo modo.
-3. No Battle Royale, ambos entram na aeronave; use **SALTAR DO AVIÃO** ou **F** para iniciar o paraquedas.
+3. No Battle Royale, aguarde a aeronave. Use **SALTAR DO AVIÃO** ou **F** para iniciar o paraquedas.
 4. Em outra máquina da mesma rede, abra `http://IP-LOCAL-DO-SERVIDOR:3000`.
 
 Battle Royale aceita até 24 jogadores e inicia com dois para facilitar testes. Squad Fight aceita até dez jogadores.
@@ -69,7 +69,7 @@ O arquivo `render.yaml` prepara um serviço Node no Render:
 - Start: `npm start`
 - Health check: `/health`
 
-No Railway, use os mesmos comandos de instalação e inicialização. Configure CORS para o domínio do jogo antes de abrir o serviço publicamente.
+No Railway, use os mesmos comandos de instalação e inicialização. Restrinja CORS ao domínio do jogo antes de abrir o serviço publicamente.
 
-## Limitações conhecidas
-Os modelos são construídos proceduralmente com geometrias Three.js, sem pacotes de animação ou assets externos. Esta atualização melhora a apresentação e cria a sequência de entrada aérea; não representa uma reprodução completa do Blood Strike comercial. Ainda são necessários playtests, otimização de rede sob carga, áudio, animações de recarga/contextuais e modelos artísticos finais.
+## Escopo desta versão
+Os modelos são gerados proceduralmente com geometrias Three.js, sem pacotes externos de animação ou assets artísticos. Esta versão traz uma melhoria visual e a sequência de entrada aérea, mas ainda é um protótipo. Recomenda-se fazer testes de jogabilidade em navegador desktop e celular antes de publicar uma partida aberta. Ainda faltam áudio, animações de recarga/contextuais, física mais completa para cobertura e testes de carga com partidas cheias.
