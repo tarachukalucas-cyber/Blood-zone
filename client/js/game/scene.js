@@ -255,6 +255,58 @@ function makeHand(parent,material,x,y,z) {
   for(let i=0;i<4;i++)box(hand,.045,.13,.055,material,-.07+i*.047,-.11,-.06);
   return hand;
 }
+function makeWeaponModel(type="rifle") {
+  const model=new THREE.Group();
+  const bodyMat=new THREE.MeshStandardMaterial({color:type==="marksman"?0x4d5962:0x303940,metalness:.58,roughness:.4});
+  const railMat=new THREE.MeshStandardMaterial({color:0x20282e,metalness:.45,roughness:.5});
+  const brassMat=new THREE.MeshStandardMaterial({color:0x9d8050,metalness:.55,roughness:.4});
+  if(type==="marksman") {
+    box(model,.22,.2,1.02,bodyMat,0,0,0);
+    box(model,.23,.13,.42,railMat,0,-.01,.52);
+    const barrel=cylinder(model,.045,.065,1.02,mats.metal,0,.02,-.95,10);barrel.rotation.x=Math.PI/2;
+    box(model,.14,.34,.2,railMat,0,-.23,-.02);
+    box(model,.14,.16,.24,railMat,0,-.18,.23);
+    const scope=cylinder(model,.105,.105,.42,railMat,0,.24,-.05,12);scope.rotation.x=Math.PI/2;
+    cylinder(model,.16,.16,.18,brassMat,0,.24,-.05,12).rotation.x=Math.PI/2;
+    box(model,.04,.11,.12,railMat,0,.14,-.7);
+  } else if(type==="shotgun") {
+    box(model,.26,.2,.63,bodyMat,0,0,.04);
+    for(const x of [-.075,.075]) {
+      const barrel=cylinder(model,.055,.06,.82,mats.metal,x,.035,-.63,10);barrel.rotation.x=Math.PI/2;
+    }
+    box(model,.24,.12,.34,railMat,0,-.03,.47);
+    cylinder(model,.055,.055,.5,railMat,0,-.16,-.14,10).rotation.x=Math.PI/2;
+    box(model,.15,.29,.2,railMat,0,-.22,.03);
+    box(model,.15,.15,.2,railMat,0,-.16,.27);
+    box(model,.18,.07,.25,brassMat,0,.15,-.08);
+  } else if(type==="smg") {
+    box(model,.2,.17,.55,bodyMat,0,0,0);
+    box(model,.21,.12,.28,railMat,0,-.01,.4);
+    const barrel=cylinder(model,.04,.05,.48,mats.metal,0,.02,-.5,10);barrel.rotation.x=Math.PI/2;
+    box(model,.12,.24,.16,railMat,0,-.19,-.02);
+    box(model,.14,.17,.16,railMat,0,-.16,.16);
+    box(model,.16,.05,.15,brassMat,0,.13,-.05);
+    box(model,.18,.09,.23,railMat,0,.02,.57);
+  } else {
+    box(model,.2,.18,.75,bodyMat,0,0,0);
+    box(model,.24,.12,.42,railMat,0,-.02,.33);
+    const barrel=cylinder(model,.045,.06,.66,mats.metal,0,.025,-.62,10);barrel.rotation.x=Math.PI/2;
+    box(model,.12,.28,.2,railMat,0,-.2,-.1);
+    box(model,.13,.2,.17,railMat,0,-.16,.1);
+    box(model,.18,.07,.22,mats.metal,0,.13,-.1);
+    const optic=cylinder(model,.075,.075,.2,railMat,0,.25,-.06,10);optic.rotation.x=Math.PI/2;
+    box(model,.035,.12,.18,railMat,0,.16,-.62);
+  }
+  const flash=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshBasicMaterial({color:0xffc56a}));
+  flash.position.set(0,.025,type==="marksman"?-1.55:type==="shotgun"?-1.08:type==="smg"?-.77:-.99);
+  flash.visible=false;model.add(flash);
+  model.userData.flash=flash;return model;
+}
+export function setFirstPersonWeapon(rig,type) {
+  const u=rig?.userData;if(!u||u.weaponType===type)return;
+  if(u.weaponModel)u.weapon.remove(u.weaponModel);
+  u.weaponModel=makeWeaponModel(type);u.weaponType=type;u.weapon.add(u.weaponModel);u.flash=u.weaponModel.userData.flash;
+}
 export function createFirstPersonRig(camera) {
   const rig=new THREE.Group();camera.add(rig);
   const sleeve=new THREE.MeshStandardMaterial({color:0x434e4d,roughness:.95});
@@ -269,17 +321,8 @@ export function createFirstPersonRig(camera) {
   const rightFore=makeLimb(pad,.13,.42);rightFore.position.set(-.07,-.24,-.26);rightFore.rotation.x=-1.03;rightArm.add(rightFore);
   const rightHand=makeHand(rightArm,glove,-.08,-.43,-.49);
   const weapon=new THREE.Group();weapon.position.set(.24,-.25,-.78);rig.add(weapon);
-  const gunBody=new THREE.Mesh(new THREE.BoxGeometry(.2,.18,.75),new THREE.MeshStandardMaterial({color:0x303940,metalness:.55,roughness:.42}));weapon.add(gunBody);
-  box(weapon,.24,.12,.42,mats.dark,0,-.02,.33); // stock
-  const barrel=cylinder(weapon,.045,.06,.66,mats.metal,0,.025,-.62,10);barrel.rotation.x=Math.PI/2;
-  box(weapon,.12,.28,.2,mats.dark,0,-.2,-.1); // magazine
-  box(weapon,.13,.2,.17,mats.dark,0,-.16,.1); // grip
-  box(weapon,.18,.07,.22,mats.metal,0,.13,-.1); // optic rail
-  const optic=cylinder(weapon,.075,.075,.2,mats.dark,0,.25,-.06,10);optic.rotation.x=Math.PI/2;
-  box(weapon,.035,.12,.18,mats.dark,0,.16,-.62);
-  const flash=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshBasicMaterial({color:0xffc56a}));
-  flash.position.set(0,.02,-.99);flash.visible=false;weapon.add(flash);
-  rig.userData={weapon,leftArm,rightArm,flash,recoil:0,leftHand,rightHand};
+  const weaponModel=makeWeaponModel("rifle");weapon.add(weaponModel);
+  rig.userData={weapon,weaponModel,weaponType:"rifle",leftArm,rightArm,flash:weaponModel.userData.flash,recoil:0,leftHand,rightHand};
   rig.position.set(0,0,0);return rig;
 }
 export function animateFirstPersonRig(rig,time,moving,sprinting,airborne,dt) {
@@ -290,7 +333,7 @@ export function animateFirstPersonRig(rig,time,moving,sprinting,airborne,dt) {
   u.recoil=Math.max(0,u.recoil-dt*5.5);
   u.weapon.position.z=-.78+u.recoil*.13;
   u.weapon.rotation.x=-u.recoil*.16;
-  u.weapon.rotation.y=Math.sin(time*8)*(moving?.012:.003);
+  u.weapon.rotation.y=Math.sin(time*8)*(moving ? .012 : .003);
   u.flash.visible=u.recoil>.72;
   u.leftArm.rotation.x=airborne?-.07:0;
   u.rightArm.rotation.x=airborne?-.06:0;
