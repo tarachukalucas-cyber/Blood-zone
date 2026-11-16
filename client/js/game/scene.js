@@ -56,6 +56,17 @@ function addTree(scene,x,z,scale=1) {
   const crown=new THREE.Mesh(new THREE.ConeGeometry(1.15,2.6,7),new THREE.MeshStandardMaterial({color:0x496347}));
   crown.position.y=4; crown.castShadow=true; tree.add(crown); scene.add(tree);
 }
+function addContainer(scene,x,z,color) {
+  const group=new THREE.Group();group.position.set(x,0,z);
+  const paint=new THREE.MeshStandardMaterial({color,metalness:.25,roughness:.78});
+  box(group,11,3.1,3.6,paint,0,1.55,0);
+  const ribMat=new THREE.MeshStandardMaterial({color:0x303c43,metalness:.35,roughness:.7});
+  for(let n=-5;n<=5;n++)box(group,.075,2.9,3.68,ribMat,n,1.55,0);
+  box(group,10.6,.13,.09,mats.metal,0,2.95,1.85);
+  for(let n=-4;n<=4;n+=2)box(group,.1,2.7,.1,mats.metal,n,1.55,1.86);
+  box(group,10.4,.1,.1,mats.dark,0,.18,1.86);
+  scene.add(group);
+}
 function addStreetLamp(scene,x,z) {
   const g=new THREE.Group(); g.position.set(x,0,z);
   cylinder(g,.08,.12,6,mats.dark,0,3,0);
@@ -158,6 +169,8 @@ export function buildArena(scene) {
     {x:5,z:135,w:22,d:15,h:9},{x:-10,z:-15,w:12,d:10,h:5}
   ];
   obstacles.forEach((o,i)=>addBuilding(scene,o,i));
+  addContainer(scene,-34,-165,0x657b83);addContainer(scene,-20,-165,0x9a6049);
+  addContainer(scene,125,-178,0x61745f);addContainer(scene,139,-178,0x667d91);
   addDistrictLabel(scene,"Industrial Yard",-88,-32);
   addDistrictLabel(scene,"Downtown",74,-72);
   addDistrictLabel(scene,"Old Village",-82,68);
