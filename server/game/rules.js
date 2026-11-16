@@ -27,6 +27,7 @@ const OBSTACLES = Object.freeze([
   {x:-112,z:125,w:14,d:12,h:8},{x:-79,z:137,w:16,d:13,h:9},{x:-47,z:126,w:13,d:12,h:7},
   // Port / docks
   {x:10,z:-150,w:28,d:18,h:11},{x:52,z:-155,w:25,d:18,h:13},{x:94,z:-150,w:24,d:18,h:9},
+  {x:-34,z:-165,w:11,d:3.6,h:3.1},{x:-20,z:-165,w:11,d:3.6,h:3.1},{x:125,z:-178,w:11,d:3.6,h:3.1},{x:139,z:-178,w:11,d:3.6,h:3.1},
   // Radar hill outpost
   {x:120,z:110,w:20,d:18,h:12},{x:155,z:130,w:18,d:16,h:9},
   // Scattered cover and roadside structures
