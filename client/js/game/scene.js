@@ -71,7 +71,6 @@ function makePlane() {
   nose.rotation.z=-Math.PI/2;nose.position.x=10.6;plane.add(nose);
   box(plane,4,.28,34,mats.metal,0,.25,0);
   box(plane,7,.22,9,mats.dark,-7,.2,0);
-  box(1,0.01,1,mats.dark,0,0,0); // harmless geometry helper keeps dimensions explicit for simple aircraft parts
   box(plane,.22,4.5,3,mats.metal,-8,2,0);
   // cockpit glazing
   const cockpit=new THREE.Mesh(new THREE.BoxGeometry(2.7,1.1,1.7),mats.glass);
@@ -261,7 +260,7 @@ export function createFirstPersonRig(camera) {
 }
 export function animateFirstPersonRig(rig,time,moving,sprinting,airborne,dt) {
   const u=rig.userData;if(!u)return;
-  const bob=moving?Math.sin(time*(sprinting?14:10))*(sprinting?.027:.015):Math.sin(time*1.5)*.004;
+  const bob=moving?Math.sin(time*(sprinting?14:10))*(sprinting ? 0.027 : 0.015):Math.sin(time*1.5)*.004;
   rig.position.set(moving?Math.cos(time*5)*.008:0,bob,0);
   rig.rotation.z=(moving?Math.sin(time*5)*.012:0)+(sprinting?-.025:0);
   u.recoil=Math.max(0,u.recoil-dt*5.5);
